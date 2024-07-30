@@ -1,23 +1,12 @@
 import discord
 from discord.ext import commands
-import requests
-import os
 from dotenv import load_dotenv
+from views.database import db
 import asyncio
-from util.villagers import generate_random_villager
+from util.villagers import generate_random_villager, get_villager_info, get_villager_name
 from commands.user.profile import get_user_profile
-from util.villagers import fetch_villagers
 
 load_dotenv()
-
-
-def get_villager_info(identifier):
-    if isinstance(identifier, int):
-        villagers = fetch_villagers()
-        return villagers[identifier]
-    elif isinstance(identifier, str):
-        villager_info = fetch_villagers(identifier)
-        return villager_info[0]
 
 
 def generate_villager_message(identifier):
@@ -83,6 +72,41 @@ class Villagers(commands.Cog):
                 elif react.emoji == buttons[1] and current_page < len(residents) - 1:
                     current_page += 1
                 await message.edit(embed=residents[current_page])
+
+    @commands.slash_command(name='kick', description='Kick a resident from your island')
+    async def kick(self, ctx: discord.ApplicationContext, resident: str):
+        await ctx.defer()
+        buttons = ['\u274C', '\u2705']
+        user_profile = get_user_profile(str(ctx.author.id)).to_dict()
+        villagers = user_profile.get('villagers')
+        names_and_id = {(get_villager_name(villager_id), villager_id) for villager_id in villagers}
+        for name, villager_id in names_and_id:
+            if name.lower() == resident:
+                confirm = await ctx.respond(f'Are you sure you want to kick **{resident.title()}** from your island?')
+                for b in buttons:
+                    await confirm.add_reaction(b)
+
+                while True:
+                    try:
+                        react, user = await self.bot.wait_for(
+                            'reaction_add', timeout=60, check=lambda r, u: r.message.id ==
+                            confirm.id and u.id == ctx.author.id and r.emoji in buttons)
+                        await confirm.remove_reaction(react.emoji, user)
+                    except asyncio.TimeoutError:
+                        return await confirm.delete()
+
+                    else:
+                        if react.emoji == buttons[0]:
+                            await confirm.delete()
+                            await ctx.respond(f'Kick action cancelled.')
+                            return
+                        elif react.emoji == buttons[1]:
+                            user_profile_ref = db.collection('users').document(str(ctx.author.id))
+                            villagers.remove(villager_id)
+                            user_profile_ref.update({'villagers': villagers})
+                            await ctx.respond(f'{resident.title()} has been kicked from your island.')
+                            return
+        await ctx.respond(f'**{resident.title()}** is not a current resident on your island!')
 
     @commands.slash_command(name='campsite', description='Check your campsite for a visitor')
     async def campsite(self, ctx: discord.ApplicationContext):

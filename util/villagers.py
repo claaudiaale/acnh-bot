@@ -41,3 +41,17 @@ def generate_random_villager(user_id, number_of_villagers=1):
     else:
         visitor_ids = random.sample(range(1, villagers_length - 1), number_of_villagers)
         return visitor_ids
+
+
+def get_villager_info(identifier):
+    if isinstance(identifier, int):
+        villagers = fetch_villagers()
+        return villagers[identifier]
+    elif isinstance(identifier, str):
+        villager_info = fetch_villagers(identifier)
+        return villager_info[0]
+
+
+def get_villager_name(villager_id):
+    villager_info = get_villager_info(villager_id)
+    return villager_info['name']

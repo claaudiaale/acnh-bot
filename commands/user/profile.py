@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import views.database
 from views.database import db
-from util.villagers import generate_random_villager
+from util.villagers import generate_random_villager, get_villager_name
 
 
 def create_user_profile(user_id, username):
@@ -22,11 +22,6 @@ def create_user_profile(user_id, username):
 def get_user_profile(user_id):
     user_profile = db.collection('users').document(user_id)
     return user_profile.get()
-
-
-def get_villager_name(villager_id):
-    villager_info = get_villager_info(villager_id)
-    return villager_info['name']
 
 
 class Profile(commands.Cog):
