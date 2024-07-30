@@ -34,13 +34,13 @@ class Profile(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name='profile')
-    async def profile(self, ctx):
+    @commands.slash_command(name='profile', description='View your profile')
+    async def profile(self, ctx: discord.ApplicationContext):
         if views.database.is_registered(str(ctx.author.id)):
-            await ctx.channel.send(f'Hello, {ctx.author.name}! Here\'s your current profile: ')
+            await ctx.respond(f'Hello, {ctx.author.name}! Here\'s your current profile: ')
         else:
             create_user_profile(str(ctx.author.id), ctx.author.name)
-            await ctx.channel.send(f'Welcome, {ctx.author.name}! Let\'s get a profile started for you.')
+            await ctx.respond(f'Welcome, {ctx.author.name}! Let\'s get a profile started for you.')
 
         user_profile = get_user_profile(str(ctx.author.id)).to_dict()
         villagers = user_profile.get('villagers', [])
@@ -62,5 +62,5 @@ class Profile(commands.Cog):
         await ctx.channel.send(embed=embed_profile)
 
 
-async def setup(bot):
-    await bot.add_cog(Profile(bot))
+def setup(bot):
+    bot.add_cog(Profile(bot))

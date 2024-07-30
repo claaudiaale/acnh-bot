@@ -68,11 +68,11 @@ class Villager(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name='villager')
-    async def villager(self, ctx, villager_name):
+    @commands.slash_command(name='villager', description='Get information about a villager by their name')
+    async def villager(self, ctx: discord.ApplicationContext, villager_name: str):
         message = generate_villager_message(villager_name)
-        await ctx.channel.send(embed=message)
+        await ctx.respond(embed=message)
 
 
-async def setup(bot):
-    await bot.add_cog(Villager(bot))
+def setup(bot):
+    bot.add_cog(Villager(bot))

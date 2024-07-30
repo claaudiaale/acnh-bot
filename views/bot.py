@@ -9,18 +9,9 @@ intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='/', intents=intents)
 
 
-@bot.event
-async def on_ready():
-    print(f"{bot.user} is ready and online!")
-    try:
-        await bot.sync_commands()
-    except Exception as e:
-        print(f"Failed to sync commands: {e}")
-
-
 @bot.slash_command(name='intro', description='Show basic information about the ACNH bot')
-async def intro(interaction: discord.Interaction):
-    message = discord.Embed(title=f'Hello, {interaction.user.name}!',
+async def intro(ctx: discord.ApplicationContext):
+    message = discord.Embed(title=f'Hello, {ctx.author.name}!',
                             description=f'To start or view your profile, use `/profile`',
                             color=0x9dffb0)
     message.add_field(name='Villagers',
@@ -67,6 +58,22 @@ async def intro(interaction: discord.Interaction):
                       value=f'You will start off with 100,000 bells. The command `/daily` will refresh everyday at '
                             f'0:00 PST for you to receive 10,000 free bells.',
                       inline=True)
-    await interaction.response.send_message(embed=message)
+    await ctx.respond(embed=message)
+
+
+@bot.event
+async def on_connect():
+    if bot.auto_sync_commands:
+        await bot.sync_commands()
+    print(f"{bot.user.name} connected.")
+
+bot.load_extension('villagers.campsite')
+bot.load_extension('villagers.villager_info')
+bot.load_extension('user.profile')
+
+
+@bot.event
+async def on_ready():
+    print(f"{bot.user} is ready and online!")
 
 bot.run(os.getenv('BOT_TOKEN'))
