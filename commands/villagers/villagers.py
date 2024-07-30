@@ -3,6 +3,7 @@ from discord.ext import commands
 import requests
 import os
 from dotenv import load_dotenv
+from util.villagers import generate_random_villager
 
 load_dotenv()
 
@@ -64,15 +65,21 @@ def generate_villager_message(identifier):
     return message
 
 
-class Villager(commands.Cog):
+class Villagers(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.slash_command(name='villager', description='Get information about a villager by their name')
-    async def villager(self, ctx: discord.ApplicationContext, villager_name: str):
+    @commands.slash_command(name='villagerinfo', description='Get information about a villager by their name')
+    async def villagerinfo(self, ctx: discord.ApplicationContext, villager_name: str):
         message = generate_villager_message(villager_name)
         await ctx.respond(embed=message)
 
+    @commands.slash_command(name='campsite', description='Check your campsite for a visitor')
+    async def campsite(self, ctx: discord.ApplicationContext):
+        await ctx.defer()
+        visitor_id = generate_random_villager(str(ctx.author.id))
+        message = generate_villager_message(visitor_id)
+        await ctx.respond(embed=message)
 
 def setup(bot):
-    bot.add_cog(Villager(bot))
+    bot.add_cog(Villagers(bot))

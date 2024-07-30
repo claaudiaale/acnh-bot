@@ -67,9 +67,9 @@ async def on_connect():
         await bot.sync_commands()
     print(f"{bot.user.name} connected.")
 
-bot.load_extension('villagers.campsite')
-bot.load_extension('villagers.villager_info')
-bot.load_extension('user.profile')
+
+bot.load_extension('commands.villagers.villager_info')
+bot.load_extension('commands.user.profile')
 
 
 @bot.event
