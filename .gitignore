@@ -1,0 +1,4 @@
+.env
+.idea/
+.venv/
+anch-bot-firebase-admins.json
