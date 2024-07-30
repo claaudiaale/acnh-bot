@@ -3,7 +3,6 @@ from discord.ext import commands
 import views.database
 from views.database import db
 from util.villagers import generate_random_villager
-from commands.villagers.villagers import get_villager_info
 
 
 def create_user_profile(user_id, username):

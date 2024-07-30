@@ -68,7 +68,7 @@ async def on_connect():
     print(f"{bot.user.name} connected.")
 
 
-bot.load_extension('commands.villagers.villager_info')
+bot.load_extension('commands.villagers.villagers')
 bot.load_extension('commands.user.profile')
 
 

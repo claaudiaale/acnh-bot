@@ -8,13 +8,16 @@ from views.database import db
 load_dotenv()
 
 
-def fetch_all_villagers():
+def fetch_villagers(villager_name=None):
     url = 'https://api.nookipedia.com/villagers'
     headers = {
         'X-API-KEY': os.getenv(f'ACNH_API_KEY'),
         'Accept-Version': '1.0.0'
     }
     params = {'game': 'NH'}
+
+    if villager_name:
+        params['name'] = villager_name
 
     response = requests.get(url, headers=headers, params=params)
 
@@ -25,7 +28,7 @@ def fetch_all_villagers():
 
 
 def generate_random_villager(user_id, number_of_villagers=1):
-    villagers_length = len(fetch_all_villagers())
+    villagers_length = len(fetch_villagers())
     user_profile_ref = db.collection('users').document(user_id)
     today = datetime.datetime.now().strftime('%Y-%m-%d')
     random.seed(today)

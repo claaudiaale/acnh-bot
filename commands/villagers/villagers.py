@@ -3,28 +3,12 @@ from discord.ext import commands
 import requests
 import os
 from dotenv import load_dotenv
+import asyncio
 from util.villagers import generate_random_villager
+from commands.user.profile import get_user_profile
+from util.villagers import fetch_villagers
 
 load_dotenv()
-
-
-def fetch_villagers(villager_name=None):
-    url = 'https://api.nookipedia.com/villagers'
-    headers = {
-        'X-API-KEY': os.getenv(f'ACNH_API_KEY'),
-        'Accept-Version': '1.0.0'
-    }
-    params = {'game': 'NH'}
-
-    if villager_name:
-        params['name'] = villager_name
-
-    response = requests.get(url, headers=headers, params=params)
-
-    if response.status_code == 200:
-        return response.json()
-    else:
-        raise Exception(f"Error: {response.status_code}: {response.text}")
 
 
 def get_villager_info(identifier):
@@ -70,9 +54,35 @@ class Villagers(commands.Cog):
         self.bot = bot
 
     @commands.slash_command(name='villagerinfo', description='Get information about a villager by their name')
-    async def villagerinfo(self, ctx: discord.ApplicationContext, villager_name: str):
-        message = generate_villager_message(villager_name)
+    async def villagerinfo(self, ctx: discord.ApplicationContext, villager: str):
+        message = generate_villager_message(villager)
         await ctx.respond(embed=message)
+
+    @commands.slash_command(name='residents', description='View all current island residents')
+    async def residents(self, ctx: discord.ApplicationContext):
+        await ctx.defer()
+        buttons = ['\u2B05', '\u27A1']
+        user_profile = get_user_profile(str(ctx.author.id))
+        residents = [(generate_villager_message(resident)) for resident in user_profile.get('villagers')]
+        current_page = 0
+        message = await ctx.respond(embed=residents[current_page])
+        for b in buttons:
+            await message.add_reaction(b)
+
+        while True:
+            try:
+                react, user = await self.bot.wait_for('reaction_add', timeout=60, check=lambda r, u: r.message.id ==
+                                                      message.id and u.id == ctx.author.id and r.emoji in buttons)
+                await message.remove_reaction(react.emoji, user)
+            except asyncio.TimeoutError:
+                return await message.delete()
+
+            else:
+                if react.emoji == buttons[0] and current_page > 0:
+                    current_page -= 1
+                elif react.emoji == buttons[1] and current_page < len(residents) - 1:
+                    current_page += 1
+                await message.edit(embed=residents[current_page])
 
     @commands.slash_command(name='campsite', description='Check your campsite for a visitor')
     async def campsite(self, ctx: discord.ApplicationContext):
@@ -80,6 +90,7 @@ class Villagers(commands.Cog):
         visitor_id = generate_random_villager(str(ctx.author.id))
         message = generate_villager_message(visitor_id)
         await ctx.respond(embed=message)
+
 
 def setup(bot):
     bot.add_cog(Villagers(bot))
