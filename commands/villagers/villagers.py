@@ -111,9 +111,41 @@ class Villagers(commands.Cog):
     @commands.slash_command(name='campsite', description='Check your campsite for a visitor')
     async def campsite(self, ctx: discord.ApplicationContext):
         await ctx.defer()
+        buttons = ['\u274C', '\u2705']
         visitor_id = generate_random_villager(str(ctx.author.id))
         message = generate_villager_message(visitor_id)
         await ctx.respond(embed=message)
+        villager_info = get_villager_info(visitor_id)
+        invitation = await ctx.send(f"Invite **{villager_info['name'].title()}** to your island?")
+        for b in buttons:
+            await invitation.add_reaction(b)
+
+        while True:
+            try:
+                react, user = await self.bot.wait_for(
+                    'reaction_add', timeout=60, check=lambda r, u: r.message.id ==
+                    invitation.id and u.id == ctx.author.id and r.emoji in buttons)
+                await invitation.remove_reaction(react.emoji, user)
+            except asyncio.TimeoutError:
+                return await invitation.delete()
+
+            else:
+                if react.emoji == buttons[0]:
+                    await ctx.respond(f'Invitation action cancelled.')
+                    return
+                elif react.emoji == buttons[1]:
+                    user_profile = get_user_profile(str(ctx.author.id)).to_dict()
+                    villagers = user_profile.get('villagers')
+                    if len(villagers) == 10:
+                        await ctx.respond(f'There\'s not enough room on your island! Kick a current resident out '
+                                          f'using `/kick` to invite **{villager_info['name'].title()}** to your '
+                                          f'island.')
+                    else:
+                        villagers.append(visitor_id)
+                        user_profile_ref = db.collection('users').document(str(ctx.author.id))
+                        user_profile_ref.update({'villagers': villagers})
+                        await ctx.respond(f'**{villager_info['name'].title()}** is now a resident on your island!')
+                        return
 
 
 def setup(bot):
