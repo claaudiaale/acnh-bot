@@ -1,13 +1,15 @@
 import discord
 from discord.ext import commands
-import views.database
-from views.database import db
-from util.villagers import generate_random_villager, get_villager_name
+import datetime
+import random
+from views.database import db, is_registered
+from util.villagers import fetch_villagers, get_villager_name
 
 
 def create_user_profile(user_id, username):
     new_villagers = generate_random_villager(user_id, 2)
     user_ref = db.collection('users').document(user_id)
+    today = datetime.datetime.now().strftime('%Y-%m-%d')
     user_ref.set({
         'username': username,
         'health': 3,
@@ -24,13 +26,41 @@ def get_user_profile(user_id):
     return user_profile.get()
 
 
+def generate_random_villager(user_id, number_of_villagers=1):
+    villagers_length = len(fetch_villagers())
+    user_profile_ref = db.collection('users').document(user_id)
+    today = datetime.datetime.now().strftime('%Y-%m-%d')
+    random.seed(today)
+
+    user_profile = get_user_profile(user_id)
+    user_profile_dict = user_profile.to_dict()
+    visitor_date = user_profile_dict.get('visitor_date')
+
+    if visitor_date == today:
+        return user_profile_dict.get('visitor')
+
+    if number_of_villagers == 1:
+        residents = user_profile_dict.get('villagers')
+        while True:
+            visitor_id = random.randint(0, villagers_length - 1)
+            if visitor_id not in residents:
+                user_profile_ref.update({
+                    'visitor': visitor_id,
+                    'visitor_date': today
+                })
+                return visitor_id
+    else:
+        visitor_ids = random.sample(range(1, villagers_length - 1), number_of_villagers)
+        return visitor_ids
+
+
 class Profile(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
     @commands.slash_command(name='profile', description='View your profile')
     async def profile(self, ctx: discord.ApplicationContext):
-        if views.database.is_registered(str(ctx.author.id)):
+        if is_registered(str(ctx.author.id)):
             await ctx.respond(f'Hello, {ctx.author.name}! Here\'s your current profile: ')
         else:
             create_user_profile(str(ctx.author.id), ctx.author.name)
