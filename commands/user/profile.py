@@ -4,20 +4,34 @@ import datetime
 import random
 from views.database import db, is_registered
 from util.villagers import fetch_villagers, get_villager_name
+from util.tools import fetch_tools
 
 
 def create_user_profile(user_id, username):
-    new_villagers = generate_random_villager(user_id, 2)
+    new_villagers = generate_random_villager(user_id, new_profile=True)
     user_ref = db.collection('users').document(user_id)
-    today = datetime.datetime.now().strftime('%Y-%m-%d')
     user_ref.set({
         'username': username,
         'health': 3,
         'bells': 100000,
         'villagers': new_villagers,
-        'inventory': [],
         'museum': []
     })
+
+    inventory_subcollection = user_ref.collection('inventory')
+    new_tools = ['flimsy_axe', 'flimsy_shovel', 'flimsy_fishing_rod', 'flimsy_net']
+    information = [fetch_tools(tools) for tools in new_tools]
+    new_user_tools = [{
+        'name': info.get('name'),
+        'remaining uses': info.get('uses'),
+        'image url': info.get('image_url'),
+        'price': info.get('price')[0].get('price'),
+        'sell': info.get('sell')
+    } for tool, info in zip(new_tools, information)]
+
+    for tool in new_user_tools:
+        inventory_subcollection.add(tool)
+
     return user_ref.get()
 
 
@@ -26,21 +40,23 @@ def get_user_profile(user_id):
     return user_profile.get()
 
 
-def generate_random_villager(user_id, number_of_villagers=1):
+def generate_random_villager(user_id, new_profile=False):
     villagers_length = len(fetch_villagers())
     user_profile_ref = db.collection('users').document(user_id)
     today = datetime.datetime.now().strftime('%Y-%m-%d')
     random.seed(today)
 
-    user_profile = get_user_profile(user_id)
-    user_profile_dict = user_profile.to_dict()
-    visitor_date = user_profile_dict.get('visitor_date')
+    if new_profile:
+        visitor_ids = random.sample(range(1, villagers_length - 1), 2)
+        return visitor_ids
+    else:
+        user_profile = get_user_profile(user_id).to_dict()
+        visitor_date = user_profile.get('visitor_date')
 
-    if visitor_date == today:
-        return user_profile_dict.get('visitor')
+        if visitor_date == today:
+            return user_profile.get('visitor')
 
-    if number_of_villagers == 1:
-        residents = user_profile_dict.get('villagers')
+        residents = user_profile.get('villagers')
         while True:
             visitor_id = random.randint(0, villagers_length - 1)
             if visitor_id not in residents:
@@ -49,9 +65,6 @@ def generate_random_villager(user_id, number_of_villagers=1):
                     'visitor_date': today
                 })
                 return visitor_id
-    else:
-        visitor_ids = random.sample(range(1, villagers_length - 1), number_of_villagers)
-        return visitor_ids
 
 
 class Profile(commands.Cog):
@@ -60,6 +73,7 @@ class Profile(commands.Cog):
 
     @commands.slash_command(name='profile', description='View your profile')
     async def profile(self, ctx: discord.ApplicationContext):
+        await ctx.defer()
         if is_registered(str(ctx.author.id)):
             await ctx.respond(f'Hello, {ctx.author.name}! Here\'s your current profile: ')
         else:
