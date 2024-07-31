@@ -83,9 +83,14 @@ class Profile(commands.Cog):
         user_profile = get_user_profile(str(ctx.author.id)).to_dict()
         villagers = user_profile.get('villagers', [])
         villager_names = {get_villager_name(villager_id) for villager_id in villagers}
-
         islanders = '- ' + '\n- '.join(villager_names)
-        inventory = '- ' + '\n- '.join(user_profile.get('inventory', []))
+
+        user_ref = db.collection('users').document(str(ctx.author.id))
+        user_inventory = user_ref.collection('inventory')
+        items = user_inventory.stream()
+        item_names = [item.to_dict().get('name') for item in items]
+        inventory = '- ' + '\n- '.join(item_names)
+
         museum = '- ' + '\n- '.join(user_profile.get('museum', []))
         embed_profile = discord.Embed(title=user_profile['username'],
                                       color=0x81f1f7,
