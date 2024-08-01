@@ -28,8 +28,33 @@ def fetch_species(month, species):
         raise Exception(f"Error: {response.status_code}: {response.text}")
 
 
+def fetch_fossils():
+    url = f'https://api.nookipedia.com/nh/fossils/individuals'
+    headers = {
+        'X-API-KEY': os.getenv(f'ACNH_API_KEY'),
+        'Accept-Version': '1.0.0'
+    }
+
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 200:
+        data = response.json()
+        fossil_names = []
+        for fossil in data:
+            specimen_data = {'name': fossil['name']}
+            if fossil['fossil_group']:
+                specimen_data['fossil group'] = fossil['fossil_group']
+            fossil_names.append(specimen_data)
+        return fossil_names
+    else:
+        raise Exception(f"Error: {response.status_code}: {response.text}")
+
+
 def fetch_specimen(species, specimen):
-    url = f'https://api.nookipedia.com/nh/{species}/{specimen}'
+    if species == 'fossils':
+        url = f'https://api.nookipedia.com/nh/{species}/individuals/{specimen}'
+    else:
+        url = f'https://api.nookipedia.com/nh/{species}/{specimen}'
 
     headers = {
         'X-API-KEY': os.getenv(f'ACNH_API_KEY'),
@@ -43,3 +68,21 @@ def fetch_specimen(species, specimen):
     else:
         raise Exception(f"Error: {response.status_code}: {response.text}")
 
+
+# def fetch_fossil_group(specimen):
+#     url = f'https://api.nookipedia.com/nh/fossils/all/spinosaurus'
+#
+#     headers = {
+#         'X-API-KEY': os.getenv(f'ACNH_API_KEY'),
+#         'Accept-Version': '1.0.0'
+#     }
+#
+#     response = requests.get(url, headers=headers)
+#
+#     if response.status_code == 200:
+#         print(response.json)
+#         return response.json()
+#     else:
+#         print(response.json)
+#         print(url)
+#         raise Exception(f"Error: {response.status_code}: {response.text}")
