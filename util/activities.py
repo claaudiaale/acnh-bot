@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def fetch_fish(month):
-    url = 'https://api.nookipedia.com/nh/fish'
+def fetch_species(month, species):
+    url = f'https://api.nookipedia.com/nh/{species}'
     headers = {
         'X-API-KEY': os.getenv(f'ACNH_API_KEY'),
         'Accept-Version': '1.0.0'
@@ -17,19 +17,20 @@ def fetch_fish(month):
 
     if response.status_code == 200:
         data = response.json()
-        fish_names = []
-        for fish in data.get('north'):
-            fish_names.append({
-                'name': f'{fish['name']}',
-                'rarity': f'{fish['rarity']}'
-            })
-        return fish_names
+        names = []
+        for specimen in data.get('north'):
+            specimen_data = {'name': specimen['name']}
+            if species == 'fish':
+                specimen_data['rarity'] = specimen['rarity']
+            names.append(specimen_data)
+        return names
     else:
         raise Exception(f"Error: {response.status_code}: {response.text}")
 
 
-def fetch_single_fish(fish_name):
-    url = f'https://api.nookipedia.com/nh/fish/{fish_name}'
+def fetch_specimen(species, specimen):
+    url = f'https://api.nookipedia.com/nh/{species}/{specimen}'
+
     headers = {
         'X-API-KEY': os.getenv(f'ACNH_API_KEY'),
         'Accept-Version': '1.0.0'

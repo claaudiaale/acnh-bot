@@ -29,7 +29,6 @@ def fetch_tools(tool_name):
         tool_info = {
             'name': data.get('name').title(),
             'uses': uses,
-            'image_url': data.get('url'),
             'sell': data.get('sell'),
             'price': data.get('buy')
         }
