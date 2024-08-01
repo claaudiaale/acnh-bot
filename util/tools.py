@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def fetch_tools(tool_name, parameter=None):
+def fetch_tools(tool_name):
     url = f'https://api.nookipedia.com/nh/tools/{tool_name}'
     headers = {
         'X-API-KEY': os.getenv(f'ACNH_API_KEY'),
