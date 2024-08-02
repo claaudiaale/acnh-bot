@@ -118,10 +118,12 @@ class Villagers(commands.Cog):
 
         user_profile = get_user_profile(str(ctx.author.id)).to_dict()
         villagers = user_profile.get('villagers')
+        villager_info = get_villager_info(visitor_id)
+
         if visitor_id in villagers:
-            return
+            await ctx.send(f'{villager_info['name']} is already a resident on your island! Check your campsite '
+                           f'tomorrow to find a new villager to invite.')
         else:
-            villager_info = get_villager_info(visitor_id)
             invitation = await ctx.send(f"Invite **{villager_info['name'].title()}** to your island?")
             for b in buttons:
                 await invitation.add_reaction(b)

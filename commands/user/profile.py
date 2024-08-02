@@ -4,7 +4,6 @@ import datetime
 import random
 
 from google.cloud.firestore_v1 import FieldFilter
-
 from views.database import db, is_registered
 from util.villagers import fetch_villagers, get_villager_name
 from util.tools import fetch_tools
@@ -42,31 +41,43 @@ def get_user_profile(user_id):
     return user_profile.get()
 
 
+def update_profile(user_id):
+    user_profile_ref = db.collection('users').document(user_id)
+    today = datetime.datetime.now().strftime('%Y-%m-%d')
+    user_profile = get_user_profile(user_id).to_dict()
+    last_update = user_profile.get('last_update', '')
+
+    if last_update != today:
+        user_profile_ref.update({
+            'last_update': today
+        })
+        return True
+    return False
+
+
 def generate_random_villager(user_id, new_profile=False):
     villagers_length = len(fetch_villagers())
     user_profile_ref = db.collection('users').document(user_id)
+    user_profile = get_user_profile(user_id).to_dict()
     today = datetime.datetime.now().strftime('%Y-%m-%d')
     random.seed(today)
 
     if new_profile:
         visitor_ids = random.sample(range(1, villagers_length - 1), 2)
         return visitor_ids
-    else:
-        user_profile = get_user_profile(user_id).to_dict()
-        visitor_date = user_profile.get('visitor_date')
 
-        if visitor_date == today:
-            return user_profile.get('visitor')
+    if not update_profile(user_id):
+        return user_profile.get('visitor')
 
-        residents = user_profile.get('villagers')
-        while True:
-            visitor_id = random.randint(0, villagers_length - 1)
-            if visitor_id not in residents:
-                user_profile_ref.update({
-                    'visitor': visitor_id,
-                    'visitor_date': today
-                })
-                return visitor_id
+    residents = user_profile.get('villagers')
+    while True:
+        visitor_id = random.randint(0, villagers_length - 1)
+        if visitor_id not in residents:
+            user_profile_ref.update({
+                'visitor': visitor_id,
+            })
+            update_profile(user_id)
+            return visitor_id
 
 
 def has_tool(user_id, item):
