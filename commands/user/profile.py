@@ -2,6 +2,9 @@ import discord
 from discord.ext import commands
 import datetime
 import random
+
+from google.cloud.firestore_v1 import FieldFilter
+
 from views.database import db, is_registered
 from util.villagers import fetch_villagers, get_villager_name
 from util.tools import fetch_tools
@@ -23,8 +26,7 @@ def create_user_profile(user_id, username):
     information = [fetch_tools(tools) for tools in new_tools]
     new_user_tools = [{
         'name': info.get('name'),
-        'remaining uses': info.get('uses'),
-        'image url': info.get('image_url'),
+        'remaining_uses': info.get('uses'),
         'price': info.get('price')[0].get('price'),
         'sell': info.get('sell')
     } for tool, info in zip(new_tools, information)]
@@ -67,6 +69,19 @@ def generate_random_villager(user_id, new_profile=False):
                 return visitor_id
 
 
+def has_tool(user_id, item):
+    user_ref = db.collection('users').document(user_id)
+    inventory_subcollection = user_ref.collection('inventory')
+
+    tools = inventory_subcollection.where(filter=FieldFilter('remaining_uses', '>', 0)).get()
+
+    for tool in tools:
+        if item in tool.get('name').lower():
+            return True
+
+    return False
+
+
 def add_to_inventory(user_id, item):
     user_ref = db.collection('users').document(user_id)
     inventory_subcollection = user_ref.collection('inventory')
@@ -105,7 +120,7 @@ class Profile(commands.Cog):
         user_ref = db.collection('users').document(str(ctx.author.id))
         user_inventory = user_ref.collection('inventory')
         items = user_inventory.stream()
-        item_names = [item.to_dict().get('name') for item in items]
+        item_names = [item.to_dict().get('name').title() for item in items]
         inventory = '- ' + '\n- '.join(item_names)
 
         museum = '- ' + '\n- '.join(user_profile.get('museum', []))
