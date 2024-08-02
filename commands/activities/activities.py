@@ -3,6 +3,7 @@ from discord.ext import commands
 import datetime
 import random
 from util.activities import fetch_species, fetch_specimen, fetch_fossils
+from commands.user.profile import add_to_inventory
 
 
 def generate_random_specimen(species):
@@ -29,31 +30,6 @@ def generate_random_specimen(species):
     return catch
 
 
-# def get_fossil_name(fossil_info):
-#     fossil_group = fossil_info.get('fossil group', None)
-#
-#     if fossil_group:
-#         if 'left' in fossil_info['name'] or 'right' in fossil_info['name']:
-#             fossil_name = fossil_info['name'].split(' ')
-#             fossil_name[1] = fossil_info['fossil group']
-#             fossil_info['name'] = '_'.join(fossil_name)
-#             return fossil_info
-#         if '-' in fossil_info['name']:
-#             fossil_info['name'] = fossil_info['name'].replace('-', ' ')
-#             fossil_info['name'] = fossil_info['name'].replace(' ', '_')
-#             return fossil_info
-#         else:
-#             if fossil_group == 'T. Rex':
-#                 t_rex_part = fossil_info['name'].split(' ')
-#                 t_rex_part[0] = 'T'
-#                 fossil_info['name'] = '_'.join(t_rex_part)
-#                 return fossil_info
-#             fossil_name = fossil_info['name'].split(' ')
-#             fossil_name[0] = fossil_info['fossil group']
-#             fossil_info['name'] = '_'.join(fossil_name)
-#     return fossil_info
-
-
 class Activities(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -63,6 +39,8 @@ class Activities(commands.Cog):
         await ctx.defer()
         catch = generate_random_specimen('fish')
         fish_info = fetch_specimen('fish', catch['name'])[0]
+        add = add_to_inventory(str(ctx.author.id), {'name': fish_info.get('name'),
+                                                    'sell': fish_info.get('sell_nook')})
 
         message = discord.Embed(title=f'{fish_info.get('name')}',
                                 color=0x81f1f7,
@@ -74,12 +52,16 @@ class Activities(commands.Cog):
                                 f'**Rarity:** {fish_info.get('rarity')}',
                           inline=False)
         await ctx.respond(embed=message)
+        if add:
+            await ctx.send(add)
 
     @commands.slash_command(name='bug', description='Use your net to catch bugs')
     async def bug(self, ctx: discord.ApplicationContext):
         await ctx.defer()
         catch = generate_random_specimen('bugs')
         bug_info = fetch_specimen('bugs', catch['name'])[0]
+        add = add_to_inventory(str(ctx.author.id), {'name': bug_info.get('name').title(),
+                                                    'sell': bug_info.get('sell_nook')})
 
         message = discord.Embed(title=f'{bug_info.get('name').title()}',
                                 color=0x81f1f7,
@@ -89,13 +71,17 @@ class Activities(commands.Cog):
                           value=f'**Location:** {bug_info.get('location')}\n'
                                 f'**Price:** {bug_info.get('sell_nook')}')
         await ctx.respond(embed=message)
+        if add:
+            await ctx.send(add)
 
     @commands.slash_command(name='dig', description='Use your shovel to dig for fossils')
     async def dig(self, ctx: discord.ApplicationContext):
         await ctx.defer()
         catch = generate_random_specimen('fossils')
         fossil_info = fetch_specimen('fossils', catch['name'].replace(' ', '_'))
-        # full_fossil_info = fetch_fossil_group(catch['fossil group'])
+        add = add_to_inventory(str(ctx.author.id), {'name': fossil_info.get('name').title(),
+                                                    'sell': fossil_info.get('sell')})
+        # full_fossil_info = fetch_fossil_group()
 
         message = discord.Embed(title=f'{fossil_info.get('name').title()}',
                                 color=0x81f1f7)
@@ -103,6 +89,8 @@ class Activities(commands.Cog):
         message.add_field(name='',
                           value=f'**Price:** {fossil_info.get('sell')}')
         await ctx.respond(embed=message)
+        if add:
+            await ctx.send(add)
 
 
 def setup(bot):

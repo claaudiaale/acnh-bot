@@ -67,6 +67,23 @@ def generate_random_villager(user_id, new_profile=False):
                 return visitor_id
 
 
+def add_to_inventory(user_id, item):
+    user_ref = db.collection('users').document(user_id)
+    inventory_subcollection = user_ref.collection('inventory')
+    count = inventory_subcollection.count()
+    inventory_count = count.get()
+
+    if inventory_count[0][0].value <= 18:
+        inventory_subcollection.add(item)
+        return
+    if inventory_count[0][0].value == 19:
+        inventory_subcollection.add(item)
+        return (f'Your pockets are full! **The next specimen you catch will be released.** Visit Nook\'s Cranny to '
+                f'sell items and empty your inventory.')
+    else:
+        return f'...Huh? Your pockets are full already! Visit Nook\'s Cranny to sell items and empty your inventory.'
+
+
 class Profile(commands.Cog):
     def __init__(self, bot):
         self.bot = bot

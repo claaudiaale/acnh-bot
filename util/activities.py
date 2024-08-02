@@ -69,8 +69,8 @@ def fetch_specimen(species, specimen):
         raise Exception(f"Error: {response.status_code}: {response.text}")
 
 
-# def fetch_fossil_group(specimen):
-#     url = f'https://api.nookipedia.com/nh/fossils/all/spinosaurus'
+# def fetch_fossil_group():
+#     url = 'https://api.nookipedia.com/nh/fossils/all'
 #
 #     headers = {
 #         'X-API-KEY': os.getenv(f'ACNH_API_KEY'),
@@ -80,9 +80,11 @@ def fetch_specimen(species, specimen):
 #     response = requests.get(url, headers=headers)
 #
 #     if response.status_code == 200:
-#         print(response.json)
-#         return response.json()
+#         data = response.json()
+#         print(data)
+#         return data
 #     else:
-#         print(response.json)
+#         data = response.json()
+#         print(data)
 #         print(url)
 #         raise Exception(f"Error: {response.status_code}: {response.text}")
