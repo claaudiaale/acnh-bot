@@ -21,7 +21,7 @@ def create_user_profile(user_id, username):
         'museum': []
     })
 
-    inventory_subcollection = user_ref.collection('inventory')
+    inventory = user_ref.collection('inventory')
     new_tools = ['flimsy_axe', 'flimsy_shovel', 'flimsy_fishing_rod', 'flimsy_net']
     information = [fetch_tools(tools) for tools in new_tools]
     new_user_tools = [{
@@ -32,7 +32,7 @@ def create_user_profile(user_id, username):
     } for tool, info in zip(new_tools, information)]
 
     for tool in new_user_tools:
-        inventory_subcollection.add(tool)
+        inventory.add(tool)
 
     return user_ref.get()
 
@@ -71,28 +71,39 @@ def generate_random_villager(user_id, new_profile=False):
 
 def has_tool(user_id, item):
     user_ref = db.collection('users').document(user_id)
-    inventory_subcollection = user_ref.collection('inventory')
+    inventory = user_ref.collection('inventory')
 
-    tools = inventory_subcollection.where(filter=FieldFilter('remaining_uses', '>', 0)).get()
+    tools = inventory.where(filter=FieldFilter('remaining_uses', '>', 0)).get()
 
     for tool in tools:
         if item in tool.get('name').lower():
-            return True
+            doc_id = tool.id
+            update_use = inventory.document(doc_id)
+            current_uses = tool.get('remaining_uses')
+            new_uses = current_uses - 1
+            if new_uses > 0:
+                update_use.update({
+                    'remaining_uses': current_uses - 1
+                })
+                return 1
+            else:
+                update_use.delete()
+                return f'Your {item} broke! Visit Nook\'s Cranny to buy a new one.'
 
     return False
 
 
 def add_to_inventory(user_id, item):
     user_ref = db.collection('users').document(user_id)
-    inventory_subcollection = user_ref.collection('inventory')
-    count = inventory_subcollection.count()
+    inventory = user_ref.collection('inventory')
+    count = inventory.count()
     inventory_count = count.get()
 
     if inventory_count[0][0].value <= 18:
-        inventory_subcollection.add(item)
+        inventory.add(item)
         return
     if inventory_count[0][0].value == 19:
-        inventory_subcollection.add(item)
+        inventory.add(item)
         return (f'Your pockets are full! **The next specimen you catch will be released.** Visit Nook\'s Cranny to '
                 f'sell items and empty your inventory.')
     else:

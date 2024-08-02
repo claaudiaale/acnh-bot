@@ -2,7 +2,6 @@ import discord
 from discord.ext import commands
 import datetime
 import random
-from views.database import db
 from util.activities import fetch_species, fetch_specimen, fetch_fossils
 from commands.user.profile import add_to_inventory, has_tool
 
@@ -38,7 +37,8 @@ class Activities(commands.Cog):
     @commands.slash_command(name='fish', description='Use your fishing rod to fish')
     async def fish(self, ctx: discord.ApplicationContext):
         await ctx.defer()
-        if has_tool(str(ctx.author.id), 'fishing rod'):
+        tool = has_tool(str(ctx.author.id), 'fishing rod')
+        if tool:
             catch = generate_random_specimen('fish')
             fish_info = fetch_specimen('fish', catch['name'])[0]
             add = add_to_inventory(str(ctx.author.id), {'name': fish_info.get('name'),
@@ -54,6 +54,8 @@ class Activities(commands.Cog):
                                     f'**Rarity:** {fish_info.get('rarity')}',
                               inline=False)
             await ctx.respond(embed=message)
+            if isinstance(tool, str):
+                await ctx.send(tool)
             if add:
                 await ctx.send(add)
         else:
@@ -62,7 +64,8 @@ class Activities(commands.Cog):
     @commands.slash_command(name='bug', description='Use your net to catch bugs')
     async def bug(self, ctx: discord.ApplicationContext):
         await ctx.defer()
-        if has_tool(str(ctx.author.id), 'net'):
+        tool = has_tool(str(ctx.author.id), 'net')
+        if tool:
             catch = generate_random_specimen('bugs')
             bug_info = fetch_specimen('bugs', catch['name'])[0]
             add = add_to_inventory(str(ctx.author.id), {'name': bug_info.get('name'),
@@ -76,6 +79,8 @@ class Activities(commands.Cog):
                               value=f'**Location:** {bug_info.get('location')}\n'
                                     f'**Price:** {bug_info.get('sell_nook')}')
             await ctx.respond(embed=message)
+            if isinstance(tool, str):
+                await ctx.send(tool)
             if add:
                 await ctx.send(add)
         else:
@@ -84,7 +89,8 @@ class Activities(commands.Cog):
     @commands.slash_command(name='dig', description='Use your shovel to dig for fossils')
     async def dig(self, ctx: discord.ApplicationContext):
         await ctx.defer()
-        if has_tool(str(ctx.author.id), 'shovel'):
+        tool = has_tool(str(ctx.author.id), 'shovel')
+        if tool:
             catch = generate_random_specimen('fossils')
             fossil_info = fetch_specimen('fossils', catch['name'].replace(' ', '_'))
             add = add_to_inventory(str(ctx.author.id), {'name': fossil_info.get('name'),
@@ -97,6 +103,8 @@ class Activities(commands.Cog):
             message.add_field(name='',
                               value=f'**Price:** {fossil_info.get('sell')}')
             await ctx.respond(embed=message)
+            if isinstance(tool, str):
+                await ctx.send(tool)
             if add:
                 await ctx.send(add)
         else:
