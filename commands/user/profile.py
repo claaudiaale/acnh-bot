@@ -9,7 +9,7 @@ from util.villagers import fetch_villagers, get_villager_name
 from util.tools import fetch_tools
 
 
-def create_user_profile(user_id, username):
+def create_user_profile(user_id):
     new_villagers = generate_random_villager(user_id, new_profile=True)
     user_ref = db.collection('users').document(user_id)
     user_ref.set({
@@ -125,7 +125,7 @@ class Profile(commands.Cog):
         if is_registered(str(ctx.author.id)):
             await ctx.respond(f'Hello, {ctx.author.name}! Here\'s your current profile: ')
         else:
-            create_user_profile(str(ctx.author.id), ctx.author.name)
+            create_user_profile(str(ctx.author.id))
             await ctx.respond(f'Welcome, {ctx.author.name}! Let\'s get a profile started for you.')
 
         user_profile = get_user_profile(str(ctx.author.id)).to_dict()
