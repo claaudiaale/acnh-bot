@@ -13,7 +13,6 @@ def create_user_profile(user_id, username):
     new_villagers = generate_random_villager(user_id, new_profile=True)
     user_ref = db.collection('users').document(user_id)
     user_ref.set({
-        'username': username,
         'health': 3,
         'bells': 100000,
         'villagers': new_villagers,
@@ -41,16 +40,12 @@ def get_user_profile(user_id):
     return user_profile.get()
 
 
-def update_profile(user_id):
-    user_profile_ref = db.collection('users').document(user_id)
+def update_profile(user_id, command):
     today = datetime.datetime.now().strftime('%Y-%m-%d')
     user_profile = get_user_profile(user_id).to_dict()
-    last_update = user_profile.get('last_update', '')
+    last_update = user_profile.get(f'{command}_last_update', '')
 
     if last_update != today:
-        user_profile_ref.update({
-            'last_update': today
-        })
         return True
     return False
 
@@ -66,7 +61,7 @@ def generate_random_villager(user_id, new_profile=False):
         visitor_ids = random.sample(range(1, villagers_length - 1), 2)
         return visitor_ids
 
-    if not update_profile(user_id):
+    if not update_profile(user_id, 'visitor'):
         return user_profile.get('visitor')
 
     residents = user_profile.get('villagers')
@@ -75,6 +70,7 @@ def generate_random_villager(user_id, new_profile=False):
         if visitor_id not in residents:
             user_profile_ref.update({
                 'visitor': visitor_id,
+                'visitor_last_update': today
             })
             update_profile(user_id)
             return visitor_id
@@ -91,8 +87,7 @@ def has_tool(user_id, item):
             doc_id = tool.id
             update_use = inventory.document(doc_id)
             current_uses = tool.get('remaining_uses')
-            new_uses = current_uses - 1
-            if new_uses > 0:
+            if current_uses - 1 > 0:
                 update_use.update({
                     'remaining_uses': current_uses - 1
                 })
@@ -157,6 +152,34 @@ class Profile(commands.Cog):
         embed_profile.add_field(name='Museum', value=museum, inline=False)
 
         await ctx.channel.send(embed=embed_profile)
+
+    @commands.slash_command(name='daily', description='Get 10,000 free bells daily')
+    async def daily(self, ctx: discord.ApplicationContext):
+        user_profile = get_user_profile(str(ctx.author.id))
+        current_bells = user_profile.get('bells')
+
+        if not update_profile(str(ctx.author.id), 'daily'):
+            message = discord.Embed(color=0x81f1f7,
+                                    description=f'Welcome back, {ctx.author.name}. You\'ve already claimed your daily '
+                                                f'reward, come back tomorrow!')
+            message.set_author(name='Tom Nook',
+                               icon_url='https://dodo.ac/np/images/6/68/Tom_Nook_NH_Character_Icon.png')
+            await ctx.respond(embed=message)
+
+        else:
+            today = datetime.datetime.now().strftime('%Y-%m-%d')
+            user_ref = db.collection('users').document(str(ctx.author.id))
+            user_ref.update({
+                'bells': current_bells + 10000,
+                'daily_last_update': today
+            })
+
+            message = discord.Embed(color=0x81f1f7,
+                                    description=f'Welcome back, {ctx.author.name}! Here\'s 10,000 bells for visiting, '
+                                                f'come back tomorrow!')
+            message.set_author(name='Tom Nook',
+                               icon_url='https://dodo.ac/np/images/6/68/Tom_Nook_NH_Character_Icon.png')
+            await ctx.respond(embed=message)
 
 
 def setup(bot):
