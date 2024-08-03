@@ -72,7 +72,6 @@ def generate_random_villager(user_id, new_profile=False):
                 'visitor': visitor_id,
                 'visitor_last_update': today
             })
-            update_profile(user_id)
             return visitor_id
 
 
