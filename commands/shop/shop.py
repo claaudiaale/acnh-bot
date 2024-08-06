@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
-from util.tools import fetch_all_tools
+from util.tools import fetch_all_tools, fetch_tools
+from commands.user.profile import add_to_inventory
 import asyncio
 
 
@@ -20,15 +21,12 @@ def generate_shop_message(info):
     for item in sorted_tools:
         price_info = item.get('price', [])
 
-        if price_info:
-            price_info = item.get('price')
-            for price in price_info:
-                cost = price.get('price')
-                currency = price.get('currency')
-                if currency == 'Bells':
-                    message.add_field(name=f'{item.get('name').title()}',
-                                      value=f'**Price:** {cost} Bells',
-                                      inline=False)
+        if len(price_info) > 0:
+            price_info = item.get('price')[0]
+            cost = price_info.get('price')
+            message.add_field(name=f'{item.get('name').title()}',
+                              value=f'**Price:** {cost} Bells',
+                              inline=False)
         else:
             message.add_field(name=f'{item.get('name').title()}',
                               value=f'**Price:** {item.get('sell')} Bells',
@@ -54,8 +52,9 @@ class Shop(commands.Cog):
 
         while True:
             try:
-                react, user = await self.bot.wait_for('reaction_add', timeout=60, check=lambda r, u: r.message.id ==
-                                                      message.id and u.id == ctx.author.id and r.emoji in buttons)
+                react, user = await self.bot.wait_for('reaction_add',
+                                                      timeout=60, check=lambda r, u: r.message.id ==
+                                                                                     message.id and u.id == ctx.author.id and r.emoji in buttons)
                 await message.remove_reaction(react.emoji, user)
             except asyncio.TimeoutError:
                 return await message.delete()
@@ -66,6 +65,51 @@ class Shop(commands.Cog):
                 elif react.emoji == buttons[1] and current_page < len(pages) - 1:
                     current_page += 1
                 await message.edit(embed=pages[current_page])
+
+    @commands.slash_command(name='buy', description='Buy items from Nook\'s Cranny')
+    async def buy(self, ctx: discord.ApplicationContext, item: str, quantity: int):
+        buttons = ['\u274C', '\u2705']
+        item_info = fetch_tools(item.replace(' ', '_'))
+        price_info = item_info.get('price', [])
+
+        if len(price_info) > 0:
+            price_info = item_info.get('price')[0]
+            cost = price_info.get('price')
+            confirmation = await ctx.send(f'Buy **{quantity}x {item.title()}** for {cost * quantity} Bells?')
+        else:
+            confirmation = await ctx.send(f'Buy **{quantity}x {item.title()}** for {item_info.get('sell') *
+                                                                                    quantity} Bells?')
+        for b in buttons:
+            await confirmation.add_reaction(b)
+
+        while True:
+            try:
+                react, user = await self.bot.wait_for(
+                    'reaction_add', timeout=60,
+                    check=lambda r, u: r.message.id == confirmation.id and u.id == ctx.author.id and r.emoji in buttons)
+                await confirmation.remove_reaction(react.emoji, user)
+            except asyncio.TimeoutError:
+                return await confirmation.delete()
+
+            else:
+                if react.emoji == buttons[0]:
+                    await confirmation.delete()
+                    await ctx.send(f'Buy action cancelled.')
+                    return
+                elif react.emoji == buttons[1]:
+                    add = add_to_inventory(str(ctx.author.id), {'name': item_info.get('name'),
+                                                                'remaining_uses': item_info.get('uses'),
+                                                                'price': item_info.get('price')[0].get('price'),
+                                                                'sell': item_info.get('sell')})
+
+                    message = discord.Embed(color=0x81f1f7,
+                                            description=f'You just bought **{quantity}x {item.title()}**. '
+                                                        f'Thanks for visiting us, come back again soon!')
+                    message.set_author(name='Timmy and Tommy',
+                                       icon_url='https://dodo.ac/np/images/3/3c/Timmy_%26_Tommy_NL.png')
+                    await ctx.send(embed=message)
+                    if add:
+                        await ctx.send(add)
 
 
 def setup(bot):
