@@ -71,6 +71,7 @@ async def on_connect():
 bot.load_extension('commands.villagers.villagers')
 bot.load_extension('commands.user.profile')
 bot.load_extension('commands.activities.activities')
+bot.load_extension('commands.shop.shop')
 
 
 @bot.event

@@ -35,3 +35,35 @@ def fetch_tools(tool_name):
         return tool_info
     else:
         raise Exception(f"Error: {response.status_code}: {response.text}")
+
+
+def fetch_all_tools(tool_name):
+    url = f'https://api.nookipedia.com/nh/tools'
+    headers = {
+        'X-API-KEY': os.getenv(f'ACNH_API_KEY'),
+        'Accept-Version': '1.0.0'
+    }
+
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 200:
+        data = response.json()
+        shop_items = []
+        for item in data:
+            if tool_name == 'fishing rod':
+                item_name = item.get('name')
+                if item_name in [f'flimsy {tool_name}', 'golden rod', tool_name]:
+                    item_info = {'name': item_name,
+                                 'price': item.get('buy'),
+                                 'sell': item.get('sell')}
+                    shop_items.append(item_info)
+            else:
+                item_name = item.get('name')
+                if item_name in [f'flimsy {tool_name}', f'golden {tool_name}', tool_name]:
+                    item_info = {'name': item_name,
+                                 'price': item.get('buy'),
+                                 'sell': item.get('sell')}
+                    shop_items.append(item_info)
+        return shop_items
+    else:
+        raise Exception(f"Error: {response.status_code}: {response.text}")
