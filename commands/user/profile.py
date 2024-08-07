@@ -115,6 +115,36 @@ def add_to_inventory(user_id, item):
         return f'...Huh? Your pockets are full already! Visit Nook\'s Cranny to sell items and empty your inventory.'
 
 
+def has_item(user_id, item):
+    user_ref = db.collection('users').document(user_id)
+    inventory_ref = user_ref.collection('inventory')
+    inv_item = inventory_ref.where(filter=FieldFilter('name', '==', item)).get()
+
+    if inv_item:
+        return inv_item[0].to_dict(), inv_item[0].id
+    else:
+        return None, None
+
+
+def remove_from_inventory(user_id, item_id):
+    user_ref = db.collection('users').document(user_id)
+    inventory = user_ref.collection('inventory')
+
+    inventory.document(item_id).delete()
+    return
+
+
+def add_bells(user_id, bells):
+    user_profile = get_user_profile(user_id)
+    current_bells = user_profile.get('bells')
+    user_ref = db.collection('users').document(user_id)
+
+    user_ref.update({
+        'bells': current_bells + bells
+    })
+    return
+
+
 class Profile(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -168,8 +198,8 @@ class Profile(commands.Cog):
         else:
             today = datetime.datetime.now().strftime('%Y-%m-%d')
             user_ref = db.collection('users').document(str(ctx.author.id))
+            add_bells(str(ctx.author.id), 10000)
             user_ref.update({
-                'bells': current_bells + 10000,
                 'daily_last_update': today
             })
 
