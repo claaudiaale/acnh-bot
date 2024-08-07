@@ -1,4 +1,5 @@
 import requests
+import re
 import os
 from dotenv import load_dotenv
 
@@ -69,22 +70,47 @@ def fetch_specimen(species, specimen):
         raise Exception(f"Error: {response.status_code}: {response.text}")
 
 
-# def fetch_fossil_group():
-#     url = 'https://api.nookipedia.com/nh/fossils/all'
-#
-#     headers = {
-#         'X-API-KEY': os.getenv(f'ACNH_API_KEY'),
-#         'Accept-Version': '1.0.0'
-#     }
-#
-#     response = requests.get(url, headers=headers)
-#
-#     if response.status_code == 200:
-#         data = response.json()
-#         print(data)
-#         return data
-#     else:
-#         data = response.json()
-#         print(data)
-#         print(url)
-#         raise Exception(f"Error: {response.status_code}: {response.text}")
+def fetch_fossil_group(fossil_group):
+    url = f'https://api.nookipedia.com/nh/fossils/all/{fossil_group}'
+
+    headers = {
+        'X-API-KEY': os.getenv(f'ACNH_API_KEY'),
+        'Accept-Version': '1.0.0'
+    }
+
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 200:
+        data = response.json()
+        return data['description']
+    else:
+        raise Exception(f"Error: {response.status_code}: {response.text}")
+
+
+def fetch_single_fossil(fossil_name):
+    url = "https://nookipedia.com/w/api.php"
+    params = {
+        'action': 'query',
+        'format': 'json',
+        'titles': fossil_name,
+        'prop': 'revisions',
+        'rvprop': 'content',
+        'rvparse': True
+    }
+
+    response = requests.get(url, params=params)
+    data = response.json()
+
+    pages = data.get('query').get('pages')
+    for page_id, page in pages.items():
+        information = page.get('revisions')[0].get('*')
+        # print(information)
+        description = get_description(information)
+        return description
+
+
+def get_description(information):
+    pattern = re.compile(r'<div class="blathers-text">.*?<i>(.*?)</i></div>', re.DOTALL)
+    match = pattern.search(information)
+    text = match.group(1).strip()
+    return text.strip('"')

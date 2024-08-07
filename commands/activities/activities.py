@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import datetime
 import random
-from util.activities import fetch_species, fetch_specimen, fetch_fossils
+from util.activities import fetch_species, fetch_specimen, fetch_fossils, fetch_fossil_group, fetch_single_fossil
 from commands.user.profile import add_to_inventory, has_tool
 
 
@@ -42,7 +42,7 @@ class Activities(commands.Cog):
             catch = generate_random_specimen('fish')
             fish_info = fetch_specimen('fish', catch['name'])[0]
             add = add_to_inventory(str(ctx.author.id), {'name': fish_info.get('name'),
-                                                        'sell': int(fish_info.get('sell_nook'))})
+                                                        'sell': int(fish_info.get('sell_nook'))}, 1)
 
             message = discord.Embed(title=f'{fish_info.get('name')}',
                                     color=0x81f1f7,
@@ -69,7 +69,7 @@ class Activities(commands.Cog):
             catch = generate_random_specimen('bugs')
             bug_info = fetch_specimen('bugs', catch['name'])[0]
             add = add_to_inventory(str(ctx.author.id), {'name': bug_info.get('name'),
-                                                        'sell': int(bug_info.get('sell_nook'))})
+                                                        'sell': int(bug_info.get('sell_nook'))}, 1)
 
             message = discord.Embed(title=f'{bug_info.get('name').title()}',
                                     color=0x81f1f7,
@@ -94,11 +94,16 @@ class Activities(commands.Cog):
             catch = generate_random_specimen('fossils')
             fossil_info = fetch_specimen('fossils', catch['name'].replace(' ', '_'))
             add = add_to_inventory(str(ctx.author.id), {'name': fossil_info.get('name'),
-                                                        'sell': fossil_info.get('sell')})
-            # full_fossil_info = fetch_fossil_group()
+                                                        'sell': fossil_info.get('sell')}, 1)
+            fossil_group = fossil_info.get('fossil_group')
+            if fossil_group:
+                fossil_description = fetch_fossil_group(fossil_group)
+            else:
+                fossil_description = fetch_single_fossil(fossil_info.get('name'))
 
             message = discord.Embed(title=f'{fossil_info.get('name').title()}',
-                                    color=0x81f1f7)
+                                    color=0x81f1f7,
+                                    description=f'{fossil_description}')
             message.set_thumbnail(url=f'{fossil_info['image_url']}')
             message.add_field(name='',
                               value=f'**Price:** {fossil_info.get('sell')}')
