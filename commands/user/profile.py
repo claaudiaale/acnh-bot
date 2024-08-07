@@ -133,13 +133,17 @@ def add_inventory_stack(user_id, item, quantity):
         inventory_ref.add(item)
 
 
-def has_item(user_id, item):
+def has_item(user_id, item, quantity):
     user_ref = db.collection('users').document(user_id)
     inventory_ref = user_ref.collection('inventory')
     inv_item = inventory_ref.where(filter=FieldFilter('name', '==', item)).get()
 
     if inv_item:
-        return inv_item[0].to_dict(), inv_item[0].id
+        count = inv_item[0].get('count')
+        if quantity > int(count):
+            return None, None
+        else:
+            return inv_item[0].to_dict(), inv_item[0].id
     else:
         return None, None
 

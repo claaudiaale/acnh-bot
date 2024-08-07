@@ -118,7 +118,7 @@ class Shop(commands.Cog):
     async def sell(self, ctx: discord.ApplicationContext, quantity: int, item: str):
         await ctx.defer()
         buttons = ['\u274C', '\u2705']
-        inv_item = has_item(str(ctx.author.id), item)
+        inv_item = has_item(str(ctx.author.id), item, quantity)
         if inv_item[0]:
             confirmation = discord.Embed(color=0x81f1f7,
                                          description=f'**{quantity}x {item.title()}?** Sure! How about if I offer you '
