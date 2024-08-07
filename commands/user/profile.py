@@ -4,6 +4,8 @@ import datetime
 import random
 
 from google.cloud.firestore_v1 import FieldFilter
+from google.cloud import firestore
+
 from views.database import db, is_registered
 from util.villagers import fetch_villagers, get_villager_name
 from util.tools import fetch_tools
@@ -26,7 +28,8 @@ def create_user_profile(user_id):
         'name': info.get('name'),
         'remaining_uses': info.get('uses'),
         'price': info.get('price')[0].get('price'),
-        'sell': info.get('sell')
+        'sell': info.get('sell'),
+        'count': 1
     } for tool, info in zip(new_tools, information)]
 
     for tool in new_user_tools:
@@ -98,21 +101,36 @@ def has_tool(user_id, item):
     return False
 
 
-def add_to_inventory(user_id, item):
+def add_to_inventory(user_id, item, quantity):
     user_ref = db.collection('users').document(user_id)
     inventory = user_ref.collection('inventory')
     count = inventory.count()
     inventory_count = count.get()
 
     if inventory_count[0][0].value <= 18:
-        inventory.add(item)
+        add_inventory_stack(user_id, item, quantity)
         return
     if inventory_count[0][0].value == 19:
-        inventory.add(item)
+        add_inventory_stack(user_id, item, quantity)
         return (f'Your pockets are full! **The next specimen you catch will be released.** Visit Nook\'s Cranny to '
                 f'sell items and empty your inventory.')
     else:
         return f'...Huh? Your pockets are full already! Visit Nook\'s Cranny to sell items and empty your inventory.'
+
+
+def add_inventory_stack(user_id, item, quantity):
+    user_ref = db.collection('users').document(user_id)
+    inventory_ref = user_ref.collection('inventory')
+    inv_item = inventory_ref.where(filter=FieldFilter('name', '==', item.get('name').lower())).get()
+
+    if inv_item:
+        matched_item = inventory_ref.document(inv_item[0].id)
+        matched_item.update({
+            'count': firestore.Increment(quantity)
+        })
+    else:
+        item['count'] = quantity
+        inventory_ref.add(item)
 
 
 def has_item(user_id, item):
@@ -126,23 +144,34 @@ def has_item(user_id, item):
         return None, None
 
 
-def remove_from_inventory(user_id, item_id):
+def remove_from_inventory(user_id, item_id, quantity):
     user_ref = db.collection('users').document(user_id)
     inventory = user_ref.collection('inventory')
 
-    inventory.document(item_id).delete()
+    inventory.document(item_id).update({
+        'count': firestore.Increment(-quantity)
+    })
+
+    updated_item = inventory.document(item_id).get()
+    new_count = updated_item.get('count')
+    if new_count == 0:
+        inventory.document(item_id).delete()
     return
 
 
-def add_bells(user_id, bells):
-    user_profile = get_user_profile(user_id)
-    current_bells = user_profile.get('bells')
+def update_bells(user_id, bells, buy=False):
     user_ref = db.collection('users').document(user_id)
 
-    user_ref.update({
-        'bells': current_bells + bells
-    })
-    return
+    if buy:
+        user_ref.update({
+            'bells': firestore.Increment(-bells)
+        })
+        return
+    else:
+        user_ref.update({
+            'bells': firestore.Increment(bells)
+        })
+        return
 
 
 class Profile(commands.Cog):
@@ -184,9 +213,6 @@ class Profile(commands.Cog):
 
     @commands.slash_command(name='daily', description='Get 10,000 free bells daily')
     async def daily(self, ctx: discord.ApplicationContext):
-        user_profile = get_user_profile(str(ctx.author.id))
-        current_bells = user_profile.get('bells')
-
         if not update_profile(str(ctx.author.id), 'daily'):
             message = discord.Embed(color=0x81f1f7,
                                     description=f'Welcome back, {ctx.author.name}. You\'ve already claimed your daily '
@@ -198,7 +224,7 @@ class Profile(commands.Cog):
         else:
             today = datetime.datetime.now().strftime('%Y-%m-%d')
             user_ref = db.collection('users').document(str(ctx.author.id))
-            add_bells(str(ctx.author.id), 10000)
+            update_bells(str(ctx.author.id), 10000)
             user_ref.update({
                 'daily_last_update': today
             })

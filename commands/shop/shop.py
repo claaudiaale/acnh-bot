@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from util.tools import fetch_all_tools, fetch_tools
-from commands.user.profile import add_to_inventory, has_item, remove_from_inventory, add_bells
+from commands.user.profile import add_to_inventory, has_item, remove_from_inventory, update_bells
 import asyncio
 
 
@@ -54,7 +54,7 @@ class Shop(commands.Cog):
             try:
                 react, user = await self.bot.wait_for('reaction_add', timeout=60,
                                                       check=lambda r, u: r.message.id == message.id
-                                                                         and u.id == ctx.author.id and r.emoji in buttons)
+                                                      and u.id == ctx.author.id and r.emoji in buttons)
                 await message.remove_reaction(react.emoji, user)
             except asyncio.TimeoutError:
                 return await message.delete()
@@ -97,10 +97,12 @@ class Shop(commands.Cog):
                     await ctx.send(f'Buy action cancelled.')
                     return
                 elif react.emoji == buttons[1]:
+                    price = item_info.get('price')[0].get('price')
                     add = add_to_inventory(str(ctx.author.id), {'name': item_info.get('name'),
                                                                 'remaining_uses': item_info.get('uses'),
-                                                                'price': item_info.get('price')[0].get('price'),
-                                                                'sell': item_info.get('sell')})
+                                                                'price': price,
+                                                                'sell': item_info.get('sell')}, quantity)
+                    update_bells(str(ctx.author.id), (price * quantity), buy=True)
 
                     message = discord.Embed(color=0x81f1f7,
                                             description=f'You just bought **{quantity}x {item.title()}**. '
@@ -119,8 +121,8 @@ class Shop(commands.Cog):
         inv_item = has_item(str(ctx.author.id), item)
         if inv_item[0]:
             confirmation = discord.Embed(color=0x81f1f7,
-                                         description=f'**{item.title()}?** Sure! How about if I offer you '
-                                                     f'{inv_item[0].get('sell')} Bells?')
+                                         description=f'**{quantity}x {item.title()}?** Sure! How about if I offer you '
+                                                     f'{inv_item[0].get('sell') * quantity} Bells?')
             confirmation.set_author(name='Timmy and Tommy',
                                     icon_url='https://play.nintendo.com/'
                                              'images/masthead-img-timmy-tommy.f4b49fb7.cf659c6f.png')
@@ -144,8 +146,8 @@ class Shop(commands.Cog):
                         await ctx.send(f'Sell action cancelled.')
                         return
                     elif react.emoji == buttons[1]:
-                        remove_from_inventory(str(ctx.author.id), inv_item[1])
-                        add_bells(str(ctx.author.id), inv_item[0].get('sell'))
+                        remove_from_inventory(str(ctx.author.id), inv_item[1], quantity)
+                        update_bells(str(ctx.author.id), (inv_item[0].get('sell') * quantity))
 
                         message = discord.Embed(color=0x81f1f7,
                                                 description=f'You just sold **{quantity}x {item.title()}**. Thanks '
