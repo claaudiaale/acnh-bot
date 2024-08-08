@@ -100,6 +100,7 @@ class Shop(commands.Cog):
                     price = item_info.get('price')[0].get('price')
                     add = add_to_inventory(str(ctx.author.id), {'name': item_info.get('name'),
                                                                 'remaining_uses': item_info.get('uses'),
+                                                                'original_uses': item_info.get('uses'),
                                                                 'price': price,
                                                                 'sell': item_info.get('sell')}, quantity)
                     update_bells(str(ctx.author.id), (price * quantity), buy=True)

@@ -37,7 +37,7 @@ class Activities(commands.Cog):
     @commands.slash_command(name='fish', description='Use your fishing rod to fish')
     async def fish(self, ctx: discord.ApplicationContext):
         await ctx.defer()
-        tool = has_tool(str(ctx.author.id), 'fishing rod')
+        tool = has_tool(str(ctx.author.id), 'rod')
         if tool:
             catch = generate_random_specimen('fish')
             fish_info = fetch_specimen('fish', catch['name'])[0]

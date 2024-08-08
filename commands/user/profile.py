@@ -81,23 +81,30 @@ def generate_random_villager(user_id, new_profile=False):
 def has_tool(user_id, item):
     user_ref = db.collection('users').document(user_id)
     inventory = user_ref.collection('inventory')
-
-    tools = inventory.where(filter=FieldFilter('remaining_uses', '>', 0)).get()
-
+    tools = (inventory.where(filter=FieldFilter('remaining_uses', '>', 0))
+                      .order_by('count', direction=firestore.Query.DESCENDING)
+                      .order_by('remaining_uses', direction=firestore.Query.DESCENDING)).get()
     for tool in tools:
         if item in tool.get('name').lower():
-            doc_id = tool.id
-            update_use = inventory.document(doc_id)
-            current_uses = tool.get('remaining_uses')
-            if current_uses - 1 > 0:
+            update_use = inventory.document(tool.id)
+            update_use.update({
+                'remaining_uses': firestore.Increment(-1)
+            })
+            updated_item = inventory.document(tool.id).get()
+            new_uses = updated_item.get('remaining_uses')
+            count = updated_item.get('count')
+            if new_uses > 0:
+                return 1
+            elif new_uses == 0 and count > 1:
+                original_uses = updated_item.get('original_uses')
                 update_use.update({
-                    'remaining_uses': current_uses - 1
+                    'count': firestore.Increment(-1),
+                    'remaining_uses': original_uses
                 })
                 return 1
-            else:
+            elif new_uses == 0 and count == 1:
                 update_use.delete()
                 return f'Your {item} broke! Visit Nook\'s Cranny to buy a new one.'
-
     return False
 
 
