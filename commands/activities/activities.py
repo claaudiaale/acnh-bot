@@ -1,9 +1,11 @@
+import asyncio
+
 import discord
 from discord.ext import commands
 import datetime
 import random
 from util.activities import fetch_species, fetch_specimen, fetch_fossils, fetch_fossil_group, fetch_single_fossil
-from commands.user.profile import add_to_inventory, has_tool
+from commands.user.profile import add_to_inventory, has_tool, minus_health
 
 
 def generate_random_specimen(species):
@@ -23,6 +25,12 @@ def generate_random_specimen(species):
 
         for specimen in available_species:
             species_list.extend([specimen] * int(rarity[specimen['rarity']] * 100))
+    elif species == 'bugs':
+        for specimen in available_species:
+            if specimen['name'] in ['wasp', 'scorpion', 'tarantula']:
+                species_list.extend([specimen] * int(0.3 * 100))
+            else:
+                species_list.append(specimen)
     else:
         species_list = available_species
 
@@ -64,27 +72,67 @@ class Activities(commands.Cog):
     @commands.slash_command(name='bug', description='Use your net to catch bugs')
     async def bug(self, ctx: discord.ApplicationContext):
         await ctx.defer()
+        buttons = {
+            '\U0001F41D': 'wasp',
+            '\U0001F982': 'scorpion',
+            '\U0001F577': 'tarantula'
+        }
         tool = has_tool(str(ctx.author.id), 'net')
         if tool:
             catch = generate_random_specimen('bugs')
-            bug_info = fetch_specimen('bugs', catch['name'])[0]
-            add = add_to_inventory(str(ctx.author.id), {'name': bug_info.get('name'),
-                                                        'sell': int(bug_info.get('sell_nook'))}, 1)
+            if catch['name'] in ['wasp', 'scorpion', 'tarantula']:
+                swarm = await ctx.send(f'A {catch['name']} is chasing you! '
+                                       f'You have 5 seconds to catch the correct bug!')
+                for emoji, name in buttons.items():
+                    await swarm.add_reaction(emoji)
 
-            message = discord.Embed(title=f'{bug_info.get('name').title()}',
-                                    color=0x81f1f7,
-                                    description=f'{bug_info.get('catchphrase')}')
-            message.set_thumbnail(url=f'{bug_info['render_url']}')
-            message.add_field(name='',
-                              value=f'**Location:** {bug_info.get('location')}\n'
-                                    f'**Price:** {bug_info.get('sell_nook')}')
-            await ctx.respond(embed=message)
-            if isinstance(tool, str):
-                await ctx.send(tool)
-            if add:
-                await ctx.send(add)
+                try:
+                    react, user = await self.bot.wait_for('reaction_add', timeout=5,
+                                                          check=lambda r, u: r.message.id == swarm.id
+                                                          and u.id == ctx.author.id and r.emoji in buttons)
+                    await swarm.remove_reaction(react.emoji, user)
+
+                    if catch['name'] == buttons[react.emoji]:
+                        await swarm.delete()
+                        await self.catch_bug(ctx, catch)
+                    else:
+                        await swarm.delete()
+                        await self.swarm_sting(ctx, catch)
+                except asyncio.TimeoutError:
+                    await swarm.delete()
+                    await self.swarm_sting(ctx, catch)
+            else:
+                await self.catch_bug(ctx, catch)
         else:
             await ctx.respond(f'You don\'t have a net! Visit Nook\'s Cranny to buy one and catch bugs.')
+
+    async def catch_bug(self, ctx: discord.ApplicationContext, catch):
+        tool = has_tool(str(ctx.author.id), 'net')
+        bug_info = fetch_specimen('bugs', catch['name'])[0]
+        add = add_to_inventory(str(ctx.author.id), {'name': bug_info.get('name'),
+                                                    'sell': int(bug_info.get('sell_nook'))}, 1)
+
+        message = discord.Embed(title=f'{bug_info.get('name').title()}',
+                                color=0x81f1f7,
+                                description=f'{bug_info.get('catchphrase')}')
+        message.set_thumbnail(url=f'{bug_info['render_url']}')
+        message.add_field(name='',
+                          value=f'**Location:** {bug_info.get('location')}\n'
+                                f'**Price:** {bug_info.get('sell_nook')}')
+        await ctx.respond(embed=message)
+        if isinstance(tool, str):
+            await ctx.send(tool)
+        if add:
+            await ctx.send(add)
+
+    async def swarm_sting(self, ctx: discord.ApplicationContext, catch):
+        health = minus_health(str(ctx.author.id))
+        if health:
+            await ctx.respond(health)
+            return
+        else:
+            await ctx.respond(f'Ow! Ow ow ow... You got stung by a {catch['name']} and lost one health point!')
+            return
 
     @commands.slash_command(name='dig', description='Use your shovel to dig for fossils')
     async def dig(self, ctx: discord.ApplicationContext):

@@ -87,24 +87,27 @@ def has_tool(user_id, item):
     for tool in tools:
         if item in tool.get('name').lower():
             update_use = inventory.document(tool.id)
-            update_use.update({
-                'remaining_uses': firestore.Increment(-1)
-            })
-            updated_item = inventory.document(tool.id).get()
-            new_uses = updated_item.get('remaining_uses')
-            count = updated_item.get('count')
-            if new_uses > 0:
+            if 'golden' in tool.get('name').lower():
                 return 1
-            elif new_uses == 0 and count > 1:
-                original_uses = updated_item.get('original_uses')
+            else:
                 update_use.update({
-                    'count': firestore.Increment(-1),
-                    'remaining_uses': original_uses
+                    'remaining_uses': firestore.Increment(-1)
                 })
-                return 1
-            elif new_uses == 0 and count == 1:
-                update_use.delete()
-                return f'Your {item} broke! Visit Nook\'s Cranny to buy a new one.'
+                updated_item = inventory.document(tool.id).get()
+                new_uses = updated_item.get('remaining_uses')
+                count = updated_item.get('count')
+                if new_uses > 0:
+                    return 1
+                elif new_uses == 0 and count > 1:
+                    original_uses = updated_item.get('original_uses')
+                    update_use.update({
+                        'count': firestore.Increment(-1),
+                        'remaining_uses': original_uses
+                    })
+                    return 1
+                elif new_uses == 0 and count == 1:
+                    update_use.delete()
+                    return f'Your {item} broke! Visit Nook\'s Cranny to buy a new one.'
     return False
 
 
@@ -183,6 +186,24 @@ def update_bells(user_id, bells, buy=False):
             'bells': firestore.Increment(bells)
         })
         return
+
+
+def minus_health(user_id):
+    user_ref = db.collection('users').document(user_id)
+    user_ref.update({
+        'health': firestore.Increment(-1)
+    })
+
+    updated_profile = db.collection('users').document(user_id).get()
+    if updated_profile.get('health') == 0:
+        user_inventory = user_ref.collection('inventory')
+        inventory = user_inventory.stream()
+        for inv in inventory:
+            inv.reference.delete()
+            return (f'You lost all your health points and passed out. All items from your inventory were dropped, '
+                    f'visit Nook\'s Cranny to repurchase tools!')
+    else:
+        return False
 
 
 class Profile(commands.Cog):

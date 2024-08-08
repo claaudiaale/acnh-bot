@@ -29,7 +29,7 @@ def generate_shop_message(info):
                               inline=False)
         else:
             message.add_field(name=f'{item.get('name').title()}',
-                              value=f'**Price:** {item.get('sell')} Bells',
+                              value=f'**Price:** {(item.get('sell')*4)} Bells',
                               inline=False)
     return message
 
@@ -77,7 +77,7 @@ class Shop(commands.Cog):
             cost = price_info.get('price')
             confirmation = await ctx.send(f'Buy **{quantity}x {item.title()}** for {cost * quantity} Bells?')
         else:
-            confirmation = await ctx.send(f'Buy **{quantity}x {item.title()}** for {item_info.get('sell') *
+            confirmation = await ctx.send(f'Buy **{quantity}x {item.title()}** for {(item_info.get('sell')*4) *
                                                                                     quantity} Bells?')
         for b in buttons:
             await confirmation.add_reaction(b)
@@ -97,7 +97,8 @@ class Shop(commands.Cog):
                     await ctx.send(f'Buy action cancelled.')
                     return
                 elif react.emoji == buttons[1]:
-                    price = item_info.get('price')[0].get('price')
+                    price = item_info.get('price')[0].get('price') \
+                        if item_info.get('price') else item_info.get('sell')*4
                     add = add_to_inventory(str(ctx.author.id), {'name': item_info.get('name'),
                                                                 'remaining_uses': item_info.get('uses'),
                                                                 'original_uses': item_info.get('uses'),
