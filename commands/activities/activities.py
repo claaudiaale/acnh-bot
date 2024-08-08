@@ -28,7 +28,7 @@ def generate_random_specimen(species):
     elif species == 'bugs':
         for specimen in available_species:
             if specimen['name'] in ['wasp', 'scorpion', 'tarantula']:
-                species_list.extend([specimen] * int(0.3 * 100))
+                species_list.extend([specimen] * int(0.9 * 100))
             else:
                 species_list.append(specimen)
     else:

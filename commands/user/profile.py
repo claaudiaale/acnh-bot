@@ -194,14 +194,18 @@ def minus_health(user_id):
         'health': firestore.Increment(-1)
     })
 
-    updated_profile = db.collection('users').document(user_id).get()
+    updated_profile = user_ref.get()
     if updated_profile.get('health') == 0:
+        user_ref.update({
+            'health': 3
+        })
         user_inventory = user_ref.collection('inventory')
         inventory = user_inventory.stream()
         for inv in inventory:
             inv.reference.delete()
-            return (f'You lost all your health points and passed out. All items from your inventory were dropped, '
-                    f'visit Nook\'s Cranny to repurchase tools!')
+
+        return (f'You lost all your health points and passed out. All items from your inventory were dropped, '
+                f'visit Nook\'s Cranny to repurchase tools!')
     else:
         return False
 
