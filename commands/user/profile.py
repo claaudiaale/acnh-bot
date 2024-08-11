@@ -18,7 +18,11 @@ def create_user_profile(user_id):
         'health': 3,
         'bells': 100000,
         'villagers': new_villagers,
-        'museum': []
+        'museum': {
+            'bugs': [],
+            'fish': [],
+            'fossils': []
+        }
     })
 
     inventory = user_ref.collection('inventory')
@@ -35,7 +39,20 @@ def create_user_profile(user_id):
     for tool in new_user_tools:
         inventory.add(tool)
 
+    add_museum(user_id)
+
     return user_ref.get()
+
+
+def add_museum(user_id):
+    user_ref = db.collection('users').document(user_id).collection('museum')
+
+    collection = ['bugs', 'fish', 'fossils']
+
+    for specimen in collection:
+        user_ref.document(specimen).set({
+            'collected': []
+        })
 
 
 def get_user_profile(user_id):
@@ -234,7 +251,7 @@ class Profile(commands.Cog):
         item_names = [item.to_dict().get('name').title() for item in items]
         inventory = '- ' + '\n- '.join(item_names)
 
-        museum = '- ' + '\n- '.join(user_profile.get('museum', []))
+        # museum = '- ' + '\n- '.join(user_profile.get('museum', []))
         embed_profile = discord.Embed(title=ctx.author.name,
                                       color=0x81f1f7,
                                       description=f'**Health**: {user_profile['health']}\n'
@@ -243,7 +260,7 @@ class Profile(commands.Cog):
         embed_profile.add_field(name='Villagers', value=islanders, inline=True)
         embed_profile.add_field(name='\u200b', value='\u200b', inline=True)
         embed_profile.add_field(name='Inventory', value=inventory, inline=True)
-        embed_profile.add_field(name='Museum', value=museum, inline=False)
+        # embed_profile.add_field(name='Museum', value=museum, inline=False)
 
         await ctx.send(embed=embed_profile)
 
