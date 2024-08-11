@@ -18,16 +18,16 @@ async def intro(ctx: discord.ApplicationContext):
                       value=f'At the beginning, you will start with two random villagers. Use `/campsite` to visit '
                             f'your campsite so you can find new villagers and invite them to your island! If you have '
                             f'10 island residents and you\'d like to invite a new villager, you will need to kick '
-                            f'one of your current residents out using `/kick`. Use `/villagers` to view your '
+                            f'one of your current residents out using `/kick`. Use `/residents` to view your '
                             f'current villagers. The campsite will refresh everyday at 0:00 PST.',
                       inline=True)
     message.add_field(name='\u200b',
                       value='\u200b',
                       inline=True)
     message.add_field(name='Digging, Fishing, Mining, and more!',
-                      value=f'You\'ll begin with a flimsy rod and flimsy shovel. Use `/dig` to dig for fossils, use '
-                            f'`/fish` to fish, use `/mine` to mine, and use `/bug` to catch bugs. New specimens '
-                            f'will be automatically donated to your museum. You\'ll be able to sell extra specimens to '
+                      value=f'You\'ll begin with a flimsy rod, flimsy shovel, and flimsy net. Use `/dig` to dig for '
+                            f'fossils, use `/fish` to fish, and use `/bug` to catch bugs. New specimens will be '
+                            f'automatically donated to your museum. You\'ll be able to sell extra specimens to '
                             f'Timmy and Tommy for bells. To view your current progress for your museum, use '
                             f'`/museum`.',
                       inline=True)
@@ -48,13 +48,12 @@ async def intro(ctx: discord.ApplicationContext):
                       inline=True)
     message.add_field(name='Nook\'s Cranny',
                       value=f'Sell your items to Timmy and Tommy at Nook\'s Cranny using `/sell`. If you\'d like to '
-                            f'view items they are currently selling, use `/shop`. To buy items, use `/buy`. The '
-                            f'shop will refresh everyday at 0:00 PST.',
+                            f'view items they are currently selling, use `/shop`. To buy items, use `/buy`.',
                       inline=True)
     message.add_field(name='\u200b',
                       value='\u200b',
                       inline=True)
-    message.add_field(name='Dailies',
+    message.add_field(name='Daily',
                       value=f'You will start off with 100,000 bells. The command `/daily` will refresh everyday at '
                             f'0:00 PST for you to receive 10,000 free bells.',
                       inline=True)

@@ -224,7 +224,7 @@ class Profile(commands.Cog):
             await ctx.respond(f'Welcome, {ctx.author.name}! Let\'s get a profile started for you.')
 
         user_profile = get_user_profile(str(ctx.author.id)).to_dict()
-        villagers = user_profile.get('villagers', [])
+        villagers = user_profile.get('villagers')
         villager_names = {get_villager_name(villager_id) for villager_id in villagers}
         islanders = '- ' + '\n- '.join(villager_names)
 
@@ -235,7 +235,7 @@ class Profile(commands.Cog):
         inventory = '- ' + '\n- '.join(item_names)
 
         museum = '- ' + '\n- '.join(user_profile.get('museum', []))
-        embed_profile = discord.Embed(title=user_profile['username'],
+        embed_profile = discord.Embed(title=ctx.author.name,
                                       color=0x81f1f7,
                                       description=f'**Health**: {user_profile['health']}\n'
                                                   f'**Bells**: {user_profile['bells']}\n')
@@ -245,7 +245,7 @@ class Profile(commands.Cog):
         embed_profile.add_field(name='Inventory', value=inventory, inline=True)
         embed_profile.add_field(name='Museum', value=museum, inline=False)
 
-        await ctx.channel.send(embed=embed_profile)
+        await ctx.send(embed=embed_profile)
 
     @commands.slash_command(name='daily', description='Get 10,000 free bells daily')
     async def daily(self, ctx: discord.ApplicationContext):

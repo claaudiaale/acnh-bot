@@ -53,6 +53,11 @@ class Villagers(commands.Cog):
         buttons = ['\u2B05', '\u27A1']
         user_profile = get_user_profile(str(ctx.author.id))
         residents = [(generate_villager_message(resident)) for resident in user_profile.get('villagers')]
+
+        if not residents:
+            await ctx.respond(f'You currently have no residents on your island.')
+            return
+
         current_page = 0
         message = await ctx.respond(embed=residents[current_page])
         for b in buttons:
@@ -64,14 +69,18 @@ class Villagers(commands.Cog):
                                                       message.id and u.id == ctx.author.id and r.emoji in buttons)
                 await message.remove_reaction(react.emoji, user)
             except asyncio.TimeoutError:
-                return await message.delete()
+                return await message.clear_reactions()
 
             else:
                 if react.emoji == buttons[0] and current_page > 0:
                     current_page -= 1
                 elif react.emoji == buttons[1] and current_page < len(residents) - 1:
                     current_page += 1
-                await message.edit(embed=residents[current_page])
+
+                embed = residents[current_page]
+                embed.set_footer(text=f'Page {current_page + 1} of {len(residents)}',
+                                 icon_url='https://dodo.ac/np/images/5/52/NH_Logo_English.png')
+                await message.edit(embed=embed)
 
     @commands.slash_command(name='kick', description='Kick a resident from your island')
     async def kick(self, ctx: discord.ApplicationContext, resident: str):
@@ -143,7 +152,7 @@ class Villagers(commands.Cog):
                         await ctx.send(f'Invitation action cancelled.')
                         return
                     elif react.emoji == buttons[1]:
-                        if len(villagers) == 10:
+                        if len(villagers) > 9:
                             await ctx.respond(f'There\'s not enough room on your island! Kick a current resident out '
                                               f'using `/kick` to invite **{villager_info['name'].title()}** to your '
                                               f'island.')

@@ -9,7 +9,8 @@ from commands.user.profile import add_to_inventory, has_tool, minus_health
 
 
 def generate_random_specimen(species):
-    current_month = datetime.datetime.now().strftime('%m')
+    # current_month = datetime.datetime.now().strftime('%m')
+    current_month = '11'
     if species == 'fossils':
         available_species = fetch_fossils()
     else:
@@ -28,7 +29,7 @@ def generate_random_specimen(species):
     elif species == 'bugs':
         for specimen in available_species:
             if specimen['name'] in ['wasp', 'scorpion', 'tarantula']:
-                species_list.extend([specimen] * int(0.9 * 100))
+                species_list.extend([specimen] * int(0.09 * 100))
             else:
                 species_list.append(specimen)
     else:
@@ -128,10 +129,10 @@ class Activities(commands.Cog):
     async def swarm_sting(self, ctx: discord.ApplicationContext, catch):
         health = minus_health(str(ctx.author.id))
         if health:
-            await ctx.respond(health)
+            await self.ctx.respond(health)
             return
         else:
-            await ctx.respond(f'Ow! Ow ow ow... You got stung by a {catch['name']} and lost one health point!')
+            await self.ctx.respond(f'Ow! Ow ow ow... You got stung by a {catch['name']} and lost one health point!')
             return
 
     @commands.slash_command(name='dig', description='Use your shovel to dig for fossils')
