@@ -25,6 +25,8 @@ def create_user_profile(user_id):
         }
     })
 
+    add_museum(user_id)
+
     inventory = user_ref.collection('inventory')
     new_tools = ['flimsy_axe', 'flimsy_shovel', 'flimsy_fishing_rod', 'flimsy_net']
     information = [fetch_tools(tools) for tools in new_tools]
@@ -38,8 +40,6 @@ def create_user_profile(user_id):
 
     for tool in new_user_tools:
         inventory.add(tool)
-
-    add_museum(user_id)
 
     return user_ref.get()
 
@@ -223,6 +223,18 @@ def minus_health(user_id):
 
         return (f'You lost all your health points and passed out. All items from your inventory were dropped, '
                 f'visit Nook\'s Cranny to repurchase tools!')
+    else:
+        return False
+
+
+def add_to_museum(user_id, specimen_type, specimen_name):
+    doc_ref = db.collection('users').document(user_id).collection('museum').document(specimen_type)
+    current_museum = doc_ref.get()
+    if specimen_name not in current_museum.to_dict().get('collected'):
+        doc_ref.update({
+            'collected': firestore.ArrayUnion([specimen_name])
+        })
+        return True
     else:
         return False
 

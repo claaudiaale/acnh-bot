@@ -5,12 +5,11 @@ from discord.ext import commands
 import datetime
 import random
 from util.activities import fetch_species, fetch_specimen, fetch_fossils, fetch_fossil_group, fetch_single_fossil
-from commands.user.profile import add_to_inventory, has_tool, minus_health
+from commands.user.profile import add_to_inventory, has_tool, minus_health, add_to_museum
 
 
 def generate_random_specimen(species):
-    # current_month = datetime.datetime.now().strftime('%m')
-    current_month = '11'
+    current_month = datetime.datetime.now().strftime('%m')
     if species == 'fossils':
         available_species = fetch_fossils()
     else:
@@ -50,8 +49,7 @@ class Activities(commands.Cog):
         if tool:
             catch = generate_random_specimen('fish')
             fish_info = fetch_specimen('fish', catch['name'])[0]
-            add = add_to_inventory(str(ctx.author.id), {'name': fish_info.get('name'),
-                                                        'sell': int(fish_info.get('sell_nook'))}, 1)
+            museum = add_to_museum(str(ctx.author.id), 'fish', fish_info.get('name'))
 
             message = discord.Embed(title=f'{fish_info.get('name')}',
                                     color=0x81f1f7,
@@ -65,8 +63,11 @@ class Activities(commands.Cog):
             await ctx.respond(embed=message)
             if isinstance(tool, str):
                 await ctx.send(tool)
-            if add:
-                await ctx.send(add)
+            if not museum:
+                add = add_to_inventory(str(ctx.author.id), {'name': fish_info.get('name'),
+                                                            'sell': int(fish_info.get('sell_nook'))}, 1)
+                if add:
+                    await ctx.send(add)
         else:
             await ctx.respond(f'You don\'t have a fishing rod! Visit Nook\'s Cranny to buy one and fish.')
 
@@ -110,8 +111,7 @@ class Activities(commands.Cog):
     async def catch_bug(self, ctx: discord.ApplicationContext, catch):
         tool = has_tool(str(ctx.author.id), 'net')
         bug_info = fetch_specimen('bugs', catch['name'])[0]
-        add = add_to_inventory(str(ctx.author.id), {'name': bug_info.get('name'),
-                                                    'sell': int(bug_info.get('sell_nook'))}, 1)
+        museum = add_to_museum(str(ctx.author.id), 'bugs', bug_info.get('name'))
 
         message = discord.Embed(title=f'{bug_info.get('name').title()}',
                                 color=0x81f1f7,
@@ -123,8 +123,11 @@ class Activities(commands.Cog):
         await ctx.respond(embed=message)
         if isinstance(tool, str):
             await ctx.send(tool)
-        if add:
-            await ctx.send(add)
+        if not museum:
+            add = add_to_inventory(str(ctx.author.id), {'name': bug_info.get('name'),
+                                                        'sell': int(bug_info.get('sell_nook'))}, 1)
+            if add:
+                await ctx.send(add)
 
     async def swarm_sting(self, ctx: discord.ApplicationContext, catch):
         health = minus_health(str(ctx.author.id))
@@ -142,8 +145,8 @@ class Activities(commands.Cog):
         if tool:
             catch = generate_random_specimen('fossils')
             fossil_info = fetch_specimen('fossils', catch['name'].replace(' ', '_'))
-            add = add_to_inventory(str(ctx.author.id), {'name': fossil_info.get('name'),
-                                                        'sell': fossil_info.get('sell')}, 1)
+            museum = add_to_museum(str(ctx.author.id), 'fossils', fossil_info.get('name'))
+
             fossil_group = fossil_info.get('fossil_group')
             if fossil_group:
                 fossil_description = fetch_fossil_group(fossil_group)
@@ -159,8 +162,11 @@ class Activities(commands.Cog):
             await ctx.respond(embed=message)
             if isinstance(tool, str):
                 await ctx.send(tool)
-            if add:
-                await ctx.send(add)
+            if not museum:
+                add = add_to_inventory(str(ctx.author.id), {'name': fossil_info.get('name'),
+                                                            'sell': int(fossil_info.get('sell_nook'))}, 1)
+                if add:
+                    await ctx.send(add)
         else:
             await ctx.respond(f'You don\'t have a shovel! Visit Nook\'s Cranny to buy one and dig for fossils.')
 
