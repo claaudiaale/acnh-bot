@@ -239,6 +239,11 @@ def add_to_museum(user_id, specimen_type, specimen_name):
         return False
 
 
+def get_museum_info(user_id, specimen_type):
+    doc_ref = db.collection('users').document(user_id).collection('museum').document(specimen_type)
+    return doc_ref.get().to_dict()
+
+
 class Profile(commands.Cog):
     def __init__(self, bot):
         self.bot = bot

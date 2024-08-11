@@ -12,21 +12,26 @@ def fetch_species(month, species):
         'X-API-KEY': os.getenv(f'ACNH_API_KEY'),
         'Accept-Version': '1.0.0'
     }
-    params = {'month': month}
+    params = {}
+    if month is not None:
+        params['month'] = month
+        response = requests.get(url, headers=headers, params=params)
 
-    response = requests.get(url, headers=headers, params=params)
-
-    if response.status_code == 200:
-        data = response.json()
-        names = []
-        for specimen in data.get('north'):
-            specimen_data = {'name': specimen['name']}
-            if species == 'fish':
-                specimen_data['rarity'] = specimen['rarity']
-            names.append(specimen_data)
-        return names
+        if response.status_code == 200:
+            data = response.json()
+            names = []
+            for specimen in data.get('north'):
+                specimen_data = {'name': specimen['name']}
+                if species == 'fish':
+                    specimen_data['rarity'] = specimen['rarity']
+                names.append(specimen_data)
+            return names
+        else:
+            raise Exception(f"Error: {response.status_code}: {response.text}")
     else:
-        raise Exception(f"Error: {response.status_code}: {response.text}")
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            return len(response.json())
 
 
 def fetch_fossils():

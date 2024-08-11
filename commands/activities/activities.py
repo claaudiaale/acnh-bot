@@ -38,6 +38,28 @@ def generate_random_specimen(species):
     return catch
 
 
+async def catch_bug(ctx: discord.ApplicationContext, catch):
+    tool = has_tool(str(ctx.author.id), 'net')
+    bug_info = fetch_specimen('bugs', catch['name'])[0]
+    museum = add_to_museum(str(ctx.author.id), 'bugs', bug_info.get('name'))
+
+    message = discord.Embed(title=f'{bug_info.get('name').title()}',
+                            color=0x81f1f7,
+                            description=f'{bug_info.get('catchphrase')}')
+    message.set_thumbnail(url=f'{bug_info['render_url']}')
+    message.add_field(name='',
+                      value=f'**Location:** {bug_info.get('location')}\n'
+                            f'**Price:** {bug_info.get('sell_nook')}')
+    await ctx.respond(embed=message)
+    if isinstance(tool, str):
+        await ctx.send(tool)
+    if not museum:
+        add = add_to_inventory(str(ctx.author.id), {'name': bug_info.get('name'),
+                                                    'sell': int(bug_info.get('sell_nook'))}, 1)
+        if add:
+            await ctx.send(add)
+
+
 class Activities(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -96,7 +118,7 @@ class Activities(commands.Cog):
 
                     if catch['name'] == buttons[react.emoji]:
                         await swarm.delete()
-                        await self.catch_bug(ctx, catch)
+                        await catch_bug(ctx, catch)
                     else:
                         await swarm.delete()
                         await self.swarm_sting(ctx, catch)
@@ -104,30 +126,9 @@ class Activities(commands.Cog):
                     await swarm.delete()
                     await self.swarm_sting(ctx, catch)
             else:
-                await self.catch_bug(ctx, catch)
+                await catch_bug(ctx, catch)
         else:
             await ctx.respond(f'You don\'t have a net! Visit Nook\'s Cranny to buy one and catch bugs.')
-
-    async def catch_bug(self, ctx: discord.ApplicationContext, catch):
-        tool = has_tool(str(ctx.author.id), 'net')
-        bug_info = fetch_specimen('bugs', catch['name'])[0]
-        museum = add_to_museum(str(ctx.author.id), 'bugs', bug_info.get('name'))
-
-        message = discord.Embed(title=f'{bug_info.get('name').title()}',
-                                color=0x81f1f7,
-                                description=f'{bug_info.get('catchphrase')}')
-        message.set_thumbnail(url=f'{bug_info['render_url']}')
-        message.add_field(name='',
-                          value=f'**Location:** {bug_info.get('location')}\n'
-                                f'**Price:** {bug_info.get('sell_nook')}')
-        await ctx.respond(embed=message)
-        if isinstance(tool, str):
-            await ctx.send(tool)
-        if not museum:
-            add = add_to_inventory(str(ctx.author.id), {'name': bug_info.get('name'),
-                                                        'sell': int(bug_info.get('sell_nook'))}, 1)
-            if add:
-                await ctx.send(add)
 
     async def swarm_sting(self, ctx: discord.ApplicationContext, catch):
         health = minus_health(str(ctx.author.id))

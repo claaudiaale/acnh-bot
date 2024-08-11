@@ -71,6 +71,7 @@ bot.load_extension('commands.villagers.villagers')
 bot.load_extension('commands.user.profile')
 bot.load_extension('commands.activities.activities')
 bot.load_extension('commands.shop.shop')
+bot.load_extension('commands.museum.museum')
 
 
 @bot.event
