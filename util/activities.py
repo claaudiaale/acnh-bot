@@ -119,3 +119,19 @@ def get_description(information):
     match = pattern.search(information)
     text = match.group(1).strip()
     return text.strip('"')
+
+
+def fetch_item_info(item_name):
+    url = f'https://api.nookipedia.com/nh/items/{item_name}'
+
+    headers = {
+        'X-API-KEY': os.getenv(f'ACNH_API_KEY'),
+        'Accept-Version': '1.0.0'
+    }
+
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        raise Exception(f"Error: {response.status_code}: {response.text}")

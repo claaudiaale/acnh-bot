@@ -4,8 +4,10 @@ import discord
 from discord.ext import commands
 import datetime
 import random
-from util.activities import fetch_species, fetch_specimen, fetch_fossils, fetch_fossil_group, fetch_single_fossil
-from commands.user.profile import add_to_inventory, has_tool, minus_health, add_to_museum
+from util.activities import (fetch_species, fetch_specimen, fetch_fossils, fetch_fossil_group, fetch_single_fossil,
+                             fetch_item_info)
+from commands.user.profile import (add_to_inventory, has_tool, minus_health, add_to_museum, get_user_profile,
+                                   update_bells)
 
 
 def generate_random_specimen(species):
@@ -60,6 +62,18 @@ async def catch_bug(ctx: discord.ApplicationContext, catch):
             await ctx.send(add)
 
 
+async def swarm_sting(ctx: discord.ApplicationContext, catch):
+    health = minus_health(str(ctx.author.id))
+    sting = f'Ow! Ow ow ow... You got stung by a {catch['name']} and lost one health point!'
+    if health:
+        await ctx.respond(sting)
+        await ctx.send(health)
+        return
+    else:
+        await ctx.respond(sting)
+        return
+
+
 class Activities(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -96,11 +110,7 @@ class Activities(commands.Cog):
     @commands.slash_command(name='bug', description='Use your net to catch bugs')
     async def bug(self, ctx: discord.ApplicationContext):
         await ctx.defer()
-        buttons = {
-            '\U0001F41D': 'wasp',
-            '\U0001F982': 'scorpion',
-            '\U0001F577': 'tarantula'
-        }
+        buttons = {'\U0001F41D': 'wasp', '\U0001F982': 'scorpion', '\U0001F577': 'tarantula'}
         tool = has_tool(str(ctx.author.id), 'net')
         if tool:
             catch = generate_random_specimen('bugs')
@@ -121,23 +131,14 @@ class Activities(commands.Cog):
                         await catch_bug(ctx, catch)
                     else:
                         await swarm.delete()
-                        await self.swarm_sting(ctx, catch)
+                        await swarm_sting(ctx, catch)
                 except asyncio.TimeoutError:
                     await swarm.delete()
-                    await self.swarm_sting(ctx, catch)
+                    await swarm_sting(ctx, catch)
             else:
                 await catch_bug(ctx, catch)
         else:
             await ctx.respond(f'You don\'t have a net! Visit Nook\'s Cranny to buy one and catch bugs.')
-
-    async def swarm_sting(self, ctx: discord.ApplicationContext, catch):
-        health = minus_health(str(ctx.author.id))
-        if health:
-            await self.ctx.respond(health)
-            return
-        else:
-            await self.ctx.respond(f'Ow! Ow ow ow... You got stung by a {catch['name']} and lost one health point!')
-            return
 
     @commands.slash_command(name='dig', description='Use your shovel to dig for fossils')
     async def dig(self, ctx: discord.ApplicationContext):
@@ -170,6 +171,60 @@ class Activities(commands.Cog):
                     await ctx.send(add)
         else:
             await ctx.respond(f'You don\'t have a shovel! Visit Nook\'s Cranny to buy one and dig for fossils.')
+
+    @commands.slash_command(name='shake', description='Shake trees for fruit')
+    async def shake(self, ctx: discord.ApplicationContext):
+        await ctx.defer()
+        buttons = {'\U0001F41D': 'wasp', '\U0001F982': 'scorpion', '\U0001F577': 'tarantula'}
+        user_profile = get_user_profile(str(ctx.author.id))
+        native_fruit = user_profile.get('fruit')
+        chances = ['apple', 'cherry', 'orange', 'peach', 'pear']
+        shake_chances = []
+
+        for item in chances:
+            if item == native_fruit:
+                shake_chances.extend([item] * 10)
+            else:
+                shake_chances.extend([item] * 2)
+        shake_chances.extend(['wasp', 'bells'])
+
+        shake = random.choice(shake_chances)
+        if shake == 'wasp':
+            catch = {'name': 'wasp'}
+            tool = has_tool(str(ctx.author.id), 'net')
+            if tool:
+                swarm = await ctx.send(f'A wasp is chasing you! '
+                                       f'You have 5 seconds to catch it!')
+                for emoji, name in buttons.items():
+                    await swarm.add_reaction(emoji)
+                try:
+                    react, user = await self.bot.wait_for('reaction_add', timeout=5,
+                                                          check=lambda r, u: r.message.id == swarm.id
+                                                          and u.id == ctx.author.id and r.emoji in buttons)
+                    await swarm.remove_reaction(react.emoji, user)
+
+                    if catch['name'] == buttons[react.emoji]:
+                        await swarm.delete()
+                        await catch_bug(ctx, catch)
+                    else:
+                        await swarm.delete()
+                        await swarm_sting(ctx, catch)
+                except asyncio.TimeoutError:
+                    await swarm.delete()
+                    await swarm_sting(ctx, catch)
+            else:
+                await ctx.respond(f'You don\'t have a net to catch a wasp!')
+                await swarm_sting(ctx, catch)
+        elif shake == 'bells':
+            await ctx.respond('You\'ve found **1,000 bells**.')
+            update_bells(str(ctx.author.id), 1000)
+        else:
+            await ctx.respond(f'You\'ve found **1x {shake.title()}**.')
+            fruit_info = fetch_item_info(shake)
+            add = add_to_inventory(str(ctx.author.id), {'name': fruit_info.get('name'),
+                                                        'sell': int(fruit_info.get('sell'))}, 1)
+            if add:
+                await ctx.send(add)
 
 
 def setup(bot):
