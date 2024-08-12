@@ -6,8 +6,8 @@ import datetime
 import random
 from util.activities import (fetch_species, fetch_specimen, fetch_fossils, fetch_fossil_group, fetch_single_fossil,
                              fetch_item_info)
-from commands.user.profile import (add_to_inventory, has_tool, minus_health, add_to_museum, get_user_profile,
-                                   update_bells)
+from commands.user.profile import (add_to_inventory, has_tool, update_health, add_to_museum, get_user_profile,
+                                   update_bells, has_item, remove_from_inventory)
 
 
 def generate_random_specimen(species):
@@ -63,7 +63,7 @@ async def catch_bug(ctx: discord.ApplicationContext, catch):
 
 
 async def swarm_sting(ctx: discord.ApplicationContext, catch):
-    health = minus_health(str(ctx.author.id))
+    health = update_health(str(ctx.author.id), 1)
     sting = f'Ow! Ow ow ow... You got stung by a {catch['name']} and lost one health point!'
     if health:
         await ctx.respond(sting)
@@ -183,7 +183,7 @@ class Activities(commands.Cog):
 
         for item in chances:
             if item == native_fruit:
-                shake_chances.extend([item] * 10)
+                shake_chances.extend([item] * 8)
             else:
                 shake_chances.extend([item] * 2)
         shake_chances.extend(['wasp', 'bells'])
@@ -225,6 +225,28 @@ class Activities(commands.Cog):
                                                         'sell': int(fruit_info.get('sell'))}, 1)
             if add:
                 await ctx.send(add)
+
+    @commands.slash_command(name='eat', description='Eat fruits to gain health points back')
+    async def eat(self, ctx: discord.ApplicationContext, quantity: int, fruit_name: str):
+        await ctx.defer()
+        fruits = ['apple', 'cherry', 'orange', 'peach', 'pear']
+        if fruit_name in fruits:
+            item_info = has_item(str(ctx.author.id), fruit_name, quantity)
+            if item_info[0]:
+                user_profile = get_user_profile(str(ctx.author.id))
+                native_fruit = user_profile.get('fruit')
+                if fruit_name == native_fruit:
+                    update_health(str(ctx.author.id), 1, True)
+                else:
+                    update_health(str(ctx.author.id), quantity * 3, True)
+                remove_from_inventory(str(ctx.author.id), item_info[1], quantity)
+                updated_profile = get_user_profile(str(ctx.author.id))
+                health = updated_profile.get('health')
+                await ctx.respond(f'You ate **{quantity}x {fruit_name.title()}**. **Current Health: {health}**')
+            else:
+                await ctx.respond(f'..Hmm....You don\'t have **{quantity}x {fruit_name.title()}** to eat right now...')
+        else:
+            await ctx.respond('You cannot eat this.')
 
 
 def setup(bot):

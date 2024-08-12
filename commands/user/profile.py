@@ -15,7 +15,7 @@ def create_user_profile(user_id):
     new_villagers = generate_random_villager(user_id, new_profile=True)
     user_ref = db.collection('users').document(user_id)
     user_ref.set({
-        'health': 3,
+        'health': 5,
         'bells': 100000,
         'villagers': new_villagers,
         'museum': {
@@ -206,26 +206,31 @@ def update_bells(user_id, bells, buy=False):
         return
 
 
-def minus_health(user_id):
+def update_health(user_id, quantity, add=False):
     user_ref = db.collection('users').document(user_id)
-    user_ref.update({
-        'health': firestore.Increment(-1)
-    })
-
-    updated_profile = user_ref.get()
-    if updated_profile.get('health') == 0:
+    if add:
         user_ref.update({
-            'health': 3
+            'health': firestore.Increment(quantity)
         })
-        user_inventory = user_ref.collection('inventory')
-        inventory = user_inventory.stream()
-        for inv in inventory:
-            inv.reference.delete()
-
-        return (f'You lost all your health points and passed out. All items from your inventory were dropped, '
-                f'visit Nook\'s Cranny to repurchase tools!')
     else:
-        return False
+        user_ref.update({
+            'health': firestore.Increment(-quantity)
+        })
+
+        updated_profile = user_ref.get()
+        if updated_profile.get('health') == 0:
+            user_ref.update({
+                'health': 5
+            })
+            user_inventory = user_ref.collection('inventory')
+            inventory = user_inventory.stream()
+            for inv in inventory:
+                inv.reference.delete()
+
+            return (f'You lost all your health points and passed out. All items from your inventory were dropped, '
+                    f'visit Nook\'s Cranny to repurchase tools!')
+        else:
+            return False
 
 
 def add_to_museum(user_id, specimen_type, specimen_name):

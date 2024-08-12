@@ -34,7 +34,7 @@ async def intro(ctx: discord.ApplicationContext):
     message.add_field(name='Surviving',
                       value='Be careful when encountering bugs! You have 3 health points, being stung by a scorpion, '
                             'bee, or tarantula will cause you to lose 1 health point. Use `/eat` to eat one of your '
-                            'native fruits to gain 1 health point or eat any other fruit to gain max health back. '
+                            'native fruits to gain 1 health point or eat any other fruit to gain 3 health points. '
                             'Draining all your health causes you to pass out and lose all your inventory items.',
                       inline=True)
     message.add_field(name='\u200b',
