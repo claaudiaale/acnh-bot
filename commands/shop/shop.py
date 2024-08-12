@@ -123,7 +123,7 @@ class Shop(commands.Cog):
                                                                 'sell': item_info.get('sell')}, quantity)
                     update_bells(str(ctx.author.id), (price * quantity), buy=True)
 
-                    message = discord.Embed(color=0x81f1f7,
+                    message = discord.Embed(color=0x9dffb0,
                                             description=f'You just bought **{quantity}x {item.title()}**. '
                                                         f'Thanks for visiting us, come back again soon!')
                     message.set_author(name='Timmy and Tommy',
@@ -139,7 +139,7 @@ class Shop(commands.Cog):
         buttons = ['\u274C', '\u2705']
         inv_item = has_item(str(ctx.author.id), item, quantity)
         if inv_item[0]:
-            confirmation = discord.Embed(color=0x81f1f7,
+            confirmation = discord.Embed(color=0x9dffb0,
                                          description=f'**{quantity}x {item.title()}?** Sure! How about if I offer you '
                                                      f'{inv_item[0].get('sell') * quantity} Bells?')
             confirmation.set_author(name='Timmy and Tommy',
@@ -168,7 +168,7 @@ class Shop(commands.Cog):
                         remove_from_inventory(str(ctx.author.id), inv_item[1], quantity)
                         update_bells(str(ctx.author.id), (inv_item[0].get('sell') * quantity))
 
-                        message = discord.Embed(color=0x81f1f7,
+                        message = discord.Embed(color=0x9dffb0,
                                                 description=f'You just sold **{quantity}x {item.title()}**. Thanks '
                                                             f'for visiting, come back again soon!')
                         message.set_author(name='Timmy and Tommy',

@@ -280,7 +280,7 @@ class Profile(commands.Cog):
         inventory = '- ' + '\n- '.join(item_names)
 
         embed_profile = discord.Embed(title=ctx.author.name.title(),
-                                      color=0x81f1f7,
+                                      color=0x9dffb0,
                                       description=f'**Native Fruit:** {native_fruit.title()} '
                                                   f'{fruit_emojis[native_fruit]}\n'
                                                   f'**Health**: {user_profile['health']} \U00002764\U0000FE0F\n'
@@ -295,7 +295,7 @@ class Profile(commands.Cog):
     @commands.slash_command(name='daily', description='Get 10,000 free bells daily')
     async def daily(self, ctx: discord.ApplicationContext):
         if not update_profile(str(ctx.author.id), 'daily'):
-            message = discord.Embed(color=0x81f1f7,
+            message = discord.Embed(color=0x9dffb0,
                                     description=f'Welcome back, {ctx.author.name}. You\'ve already claimed your daily '
                                                 f'reward, come back tomorrow!')
             message.set_author(name='Tom Nook',

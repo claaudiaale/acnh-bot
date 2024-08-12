@@ -46,12 +46,12 @@ async def catch_bug(ctx: discord.ApplicationContext, catch):
     museum = add_to_museum(str(ctx.author.id), 'bugs', bug_info.get('name'))
 
     message = discord.Embed(title=f'{bug_info.get('name').title()}',
-                            color=0x81f1f7,
+                            color=0x9dffb0,
                             description=f'{bug_info.get('catchphrase')}')
     message.set_thumbnail(url=f'{bug_info['render_url']}')
     message.add_field(name='',
                       value=f'**Location:** {bug_info.get('location')}\n'
-                            f'**Price:** {bug_info.get('sell_nook')}')
+                            f'**Price:** {bug_info.get('sell_nook')} Bells')
     await ctx.respond(embed=message)
     if isinstance(tool, str):
         await ctx.send(tool)
@@ -88,12 +88,12 @@ class Activities(commands.Cog):
             museum = add_to_museum(str(ctx.author.id), 'fish', fish_info.get('name'))
 
             message = discord.Embed(title=f'{fish_info.get('name')}',
-                                    color=0x81f1f7,
+                                    color=0x9dffb0,
                                     description=f'{fish_info.get('catchphrase')}')
             message.set_thumbnail(url=f'{fish_info['render_url']}')
             message.add_field(name='',
                               value=f'**Location:** {fish_info.get('location')}\n'
-                                    f'**Price:** {fish_info.get('sell_nook')}\n'
+                                    f'**Price:** {fish_info.get('sell_nook')} Bells\n'
                                     f'**Rarity:** {fish_info.get('rarity')}',
                               inline=False)
             await ctx.respond(embed=message)
@@ -156,11 +156,11 @@ class Activities(commands.Cog):
                 fossil_description = fetch_single_fossil(fossil_info.get('name'))
 
             message = discord.Embed(title=f'{fossil_info.get('name').title()}',
-                                    color=0x81f1f7,
+                                    color=0x9dffb0,
                                     description=f'{fossil_description}')
             message.set_thumbnail(url=f'{fossil_info['image_url']}')
             message.add_field(name='',
-                              value=f'**Price:** {fossil_info.get('sell')}')
+                              value=f'**Price:** {fossil_info.get('sell')} Bells')
             await ctx.respond(embed=message)
             if isinstance(tool, str):
                 await ctx.send(tool)
@@ -171,6 +171,33 @@ class Activities(commands.Cog):
                     await ctx.send(add)
         else:
             await ctx.respond(f'You don\'t have a shovel! Visit Nook\'s Cranny to buy one and dig for fossils.')
+
+    @commands.slash_command(name='dive', description='Dive to collect sea creatures')
+    async def dive(self, ctx: discord.ApplicationContext):
+        await ctx.defer()
+        tool = has_tool(str(ctx.author.id), 'snorkel')
+        if tool:
+            catch = generate_random_specimen('sea')
+            sea_info = fetch_specimen('sea', catch['name'])[0]
+            museum = add_to_museum(str(ctx.author.id), 'sea', sea_info.get('name'))
+
+            message = discord.Embed(title=f'{sea_info.get('name').title()}',
+                                    color=0x9dffb0,
+                                    description=f'{sea_info.get('catchphrases')[0]}')
+            message.set_thumbnail(url=f'{sea_info['render_url']}')
+            message.add_field(name='',
+                              value=f'**Price:** {sea_info.get('sell_nook')} Bells\n',
+                              inline=False)
+            await ctx.respond(embed=message)
+            if isinstance(tool, str):
+                await ctx.send(tool)
+            if not museum:
+                add = add_to_inventory(str(ctx.author.id), {'name': sea_info.get('name'),
+                                                            'sell': int(sea_info.get('sell_nook'))}, 1)
+                if add:
+                    await ctx.send(add)
+        else:
+            await ctx.respond(f'You don\'t have a snorkel! Visit Nook\'s Cranny to buy one and dive for sea creatures.')
 
     @commands.slash_command(name='shake', description='Shake trees for fruit')
     async def shake(self, ctx: discord.ApplicationContext):

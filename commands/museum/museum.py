@@ -11,9 +11,9 @@ class Museum(commands.Cog):
     @commands.slash_command(name='museum', description='Show your museum progress')
     async def museum(self, ctx: discord.ApplicationContext):
         await ctx.defer()
-        specimen_types = ['bugs', 'fish', 'fossils']
+        specimen_types = ['bugs', 'fish', 'fossils', 'sea']
         message = discord.Embed(title=f'{ctx.author.name.title()}\'s Museum',
-                                color=0x81f1f7)
+                                color=0x9dffb0)
         message.set_thumbnail(url=ctx.author.avatar.url)
         embed_count = 0
         museum_count = 0
@@ -25,10 +25,11 @@ class Museum(commands.Cog):
             else:
                 full_count = fetch_species(None, specimen)
             museum_count += full_count
-            specimen_count = len(get_museum_info(str(ctx.author.id), specimen)) + 1
+            museum_info = get_museum_info(str(ctx.author.id), specimen)
+            specimen_count = len(museum_info.get('collected'))
             completed_count += specimen_count
 
-            message.add_field(name=f'{specimen.strip('s').title()} Progress',
+            message.add_field(name=f'{specimen.strip('s').title() if specimen != 'sea' else specimen.title()} Progress',
                               value=f'{specimen_count}/{full_count}\n'
                                     f'*{round((specimen_count / full_count) * 100, 3)}% Completion*',
                               inline=True)
