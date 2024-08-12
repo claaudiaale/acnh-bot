@@ -25,26 +25,25 @@ async def intro(ctx: discord.ApplicationContext):
                       value='\u200b',
                       inline=True)
     message.add_field(name='Digging, Fishing, Mining, and more!',
-                      value=f'You\'ll begin with a flimsy rod, flimsy shovel, and flimsy net. Use `/dig` to dig for '
+                      value=f'You\'ll begin with a flimsy fishing rod, shovel, and net. Use `/dig` to dig for '
                             f'fossils, use `/fish` to fish, and use `/bug` to catch bugs. New specimens will be '
                             f'automatically donated to your museum. You\'ll be able to sell extra specimens to '
                             f'Timmy and Tommy for bells. To view your current progress for your museum, use '
                             f'`/museum`.',
                       inline=True)
-    message.add_field(name='Planting',
-                      value=f'Your island has a native fruit tree and flower. Shake trees using `/shake`, cut them '
-                            f'down using `/cut`, or plant saplings and seeds using `/plant`. You may repurchase or '
-                            f'sell fruit, flowers, and items shaken from trees at Nook\'s Cranny.',
+    message.add_field(name='Surviving',
+                      value='Be careful when encountering bugs! You have 3 health points, being stung by a scorpion, '
+                            'bee, or tarantula will cause you to lose 1 health point. Use `/eat` to eat one of your '
+                            'native fruits to gain 1 health point or eat any other fruit to gain max health back. '
+                            'Draining all your health causes you to pass out and lose all your inventory items.',
                       inline=True)
     message.add_field(name='\u200b',
                       value='\u200b',
                       inline=True)
-    message.add_field(name='Surviving',
-                      value='Be careful when cutting down and shaking trees, catching bugs, and mining! You have 3 '
-                            'health points, being stung by a scorpion or bee will cause you to lose 1 health point. '
-                            'Each one of your native fruits to gain max health back or eat any other fruit for 1 '
-                            'health point. Draining all your health causes you to pass out and lose all your inventory '
-                            'items.',
+    message.add_field(name='Fruits',
+                      value=f'Your island has a native fruit tree, shake trees using `/shake` to find your own native '
+                            f'fruit or rare exotic fruits. Be sure to carry a net in case you encounter a wasp\'s '
+                            f'nest!',
                       inline=True)
     message.add_field(name='Nook\'s Cranny',
                       value=f'Sell your items to Timmy and Tommy at Nook\'s Cranny using `/sell`. If you\'d like to '

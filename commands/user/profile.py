@@ -22,13 +22,14 @@ def create_user_profile(user_id):
             'bugs': [],
             'fish': [],
             'fossils': []
-        }
+        },
+        'fruit': random.choice(['apple', 'cherry', 'orange', 'peach', 'pear'])
     })
 
     add_museum(user_id)
 
     inventory = user_ref.collection('inventory')
-    new_tools = ['flimsy_axe', 'flimsy_shovel', 'flimsy_fishing_rod', 'flimsy_net']
+    new_tools = ['flimsy_shovel', 'flimsy_fishing_rod', 'flimsy_net']
     information = [fetch_tools(tools) for tools in new_tools]
     new_user_tools = [{
         'name': info.get('name'),
@@ -251,6 +252,8 @@ class Profile(commands.Cog):
     @commands.slash_command(name='profile', description='View your profile')
     async def profile(self, ctx: discord.ApplicationContext):
         await ctx.defer()
+        fruit_emojis = {'apple': '\U0001F34E', 'cherry': '\U0001F352', 'orange': '\U0001F34A',
+                        'peach': '\U0001F351', 'pear': '\U0001F350'}
         if is_registered(str(ctx.author.id)):
             await ctx.respond(f'Hello, {ctx.author.name}! Here\'s your current profile: ')
         else:
@@ -258,6 +261,9 @@ class Profile(commands.Cog):
             await ctx.respond(f'Welcome, {ctx.author.name}! Let\'s get a profile started for you.')
 
         user_profile = get_user_profile(str(ctx.author.id)).to_dict()
+
+        native_fruit = user_profile['fruit']
+
         villagers = user_profile.get('villagers')
         villager_names = {get_villager_name(villager_id) for villager_id in villagers}
         islanders = '- ' + '\n- '.join(villager_names)
@@ -268,16 +274,16 @@ class Profile(commands.Cog):
         item_names = [item.to_dict().get('name').title() for item in items]
         inventory = '- ' + '\n- '.join(item_names)
 
-        # museum = '- ' + '\n- '.join(user_profile.get('museum', []))
-        embed_profile = discord.Embed(title=ctx.author.name,
+        embed_profile = discord.Embed(title=ctx.author.name.title(),
                                       color=0x81f1f7,
-                                      description=f'**Health**: {user_profile['health']}\n'
-                                                  f'**Bells**: {user_profile['bells']}\n')
+                                      description=f'**Native Fruit:** {native_fruit.title()} '
+                                                  f'{fruit_emojis[native_fruit]}\n'
+                                                  f'**Health**: {user_profile['health']} \U00002764\U0000FE0F\n'
+                                                  f'**Bells**: {user_profile['bells']} \U0001F514\n')
         embed_profile.set_thumbnail(url=ctx.author.avatar.url)
-        embed_profile.add_field(name='Villagers', value=islanders, inline=True)
+        embed_profile.add_field(name='Villagers \U000026FA', value=islanders, inline=True)
         embed_profile.add_field(name='\u200b', value='\u200b', inline=True)
-        embed_profile.add_field(name='Inventory', value=inventory, inline=True)
-        # embed_profile.add_field(name='Museum', value=museum, inline=False)
+        embed_profile.add_field(name='Inventory \U0001F392', value=inventory, inline=True)
 
         await ctx.send(embed=embed_profile)
 
