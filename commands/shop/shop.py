@@ -1,7 +1,8 @@
 import discord
 from discord.ext import commands
 from util.tools import fetch_all_tools, fetch_tools
-from commands.user.profile import add_to_inventory, has_item, remove_from_inventory, update_bells
+from util.activities import fetch_item_info
+from commands.user.profile import add_to_inventory, has_item, remove_from_inventory, update_bells, get_user_profile
 import asyncio
 
 
@@ -13,20 +14,32 @@ def sort_tools(tool):
     return 1, tool
 
 
-def generate_shop_message(info):
-    sorted_tools = sorted(info, key=lambda tool: sort_tools(tool.get('name')))
+def generate_shop_message(info, fruit=False, user_id=None):
+    if not fruit:
+        sorted_items = sorted(info, key=lambda tool: sort_tools(tool.get('name')))
+    else:
+        fruit_names = ['apple', 'cherry', 'orange', 'peach', 'pear']
+        sorted_items = [fetch_item_info(fruit) for fruit in fruit_names]
+
     message = discord.Embed(title='Nook\'s Cranny',
                             color=0x9dffb0)
     message.set_thumbnail(url='https://dodo.ac/np/images/3/3c/Timmy_%26_Tommy_NL.png')
-    for item in sorted_tools:
-        price_info = item.get('price', [])
+    for item in sorted_items:
+        price_info = item.get('price', 'buy')
 
         if len(price_info) > 0:
-            price_info = item.get('price')[0]
+            price_info = item.get('price')[0] if item.get('price') else item.get('buy')[0]
             cost = price_info.get('price')
-            message.add_field(name=f'{item.get('name').title()}',
-                              value=f'**Price:** {cost} Bells',
-                              inline=False)
+            user_profile = get_user_profile(user_id)
+            native_fruit = user_profile.get('fruit')
+            if fruit and item.get('name') == native_fruit:
+                message.add_field(name=f'{item.get('name').title()}',
+                                  value=f'**Price:** {cost} Bells',
+                                  inline=False)
+            else:
+                message.add_field(name=f'{item.get('name').title()}',
+                                  value=f'**Price:** {cost * 3} Bells',
+                                  inline=False)
         else:
             message.add_field(name=f'{item.get('name').title()}',
                               value=f'**Price:** {(item.get('sell')*4)} Bells',
@@ -42,9 +55,13 @@ class Shop(commands.Cog):
     async def shop(self, ctx: discord.ApplicationContext):
         await ctx.defer()
         buttons = ['\u2B05', '\u27A1']
-        tool_names = ['axe', 'shovel', 'fishing rod', 'net']
+        tool_names = ['shovel', 'fishing rod', 'net']
         tool_info = [fetch_all_tools(tool) for tool in tool_names]
         pages = [generate_shop_message(info) for info in tool_info]
+
+        fruit_page = generate_shop_message([], fruit=True, user_id=(str(ctx.author.id)))
+        pages.insert(0, fruit_page)
+
         current_page = 0
         message = await ctx.respond(embed=pages[current_page])
         for b in buttons:
