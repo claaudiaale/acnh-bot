@@ -69,6 +69,24 @@ def get_user_profile(user_id):
     return user_profile.get()
 
 
+def reset_data(user_id, command):
+    fields = ['campsite', 'daily_command', 'fossil_count', 'fruit_count', 'swarm_count']
+    daily_limits = db.collection('users').document(user_id).collection('daily').document('limits')
+
+    limits = daily_limits.get().to_dict()
+
+    reset = {}
+    for field in fields:
+        if field != command:
+            if isinstance(limits.get(field), bool):
+                reset[field] = False
+            elif isinstance(limits.get(field), int):
+                reset[field] = 0
+
+    daily_limits.update(reset)
+    return
+
+
 def update_profile(user_id, command):
     today = datetime.datetime.now().strftime('%Y-%m-%d')
     daily_limits = db.collection('users').document(user_id).collection('daily').document('limits')
@@ -78,6 +96,8 @@ def update_profile(user_id, command):
     check = limits.get(command)
     if command in ['fossil_count', 'fruit_count', 'swarm_count']:
         if last_reset != today or check < 5:
+            if last_reset != today:
+                reset_data(user_id, command)
             daily_limits.update({
                 f'{command}': firestore.Increment(1),
                 'last_reset': today
@@ -85,12 +105,18 @@ def update_profile(user_id, command):
             return True
     elif command in ['daily_command', 'campsite']:
         if last_reset != today or not check:
+            if last_reset != today:
+                reset_data(user_id, command)
             daily_limits.update({
                 f'{command}': True,
                 'last_reset': today
             })
             return True
 
+
+def get_limit(user_id):
+    daily_limits = db.collection('users').document(user_id).collection('daily').document('limits')
+    return daily_limits.get().to_dict()
 
 
 def generate_random_villager(user_id, new_profile=False):

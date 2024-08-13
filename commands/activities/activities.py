@@ -7,7 +7,7 @@ import random
 from util.activities import (fetch_species, fetch_specimen, fetch_fossils, fetch_fossil_group, fetch_single_fossil,
                              fetch_item_info)
 from commands.user.profile import (add_to_inventory, has_tool, update_health, add_to_museum, get_user_profile,
-                                   update_bells, has_item, remove_from_inventory, update_profile)
+                                   update_bells, has_item, remove_from_inventory, update_profile, get_swarm_limit)
 
 
 def generate_random_specimen(species, no_swarm=False):
@@ -118,13 +118,14 @@ class Activities(commands.Cog):
         await ctx.defer()
         buttons = {'\U0001F41D': 'wasp', '\U0001F982': 'scorpion', '\U0001F577': 'tarantula'}
         tool = has_tool(str(ctx.author.id), 'net')
-        swarm_count = update_profile(str(ctx.author.id), 'swarm_count')
+        swarm_limit = get_swarm_limit(str(ctx.author.id)).get('swarm_count')
         if tool:
-            if not swarm_count:
+            if swarm_limit == 5:
                 catch = generate_random_specimen('bugs', no_swarm=True)
             else:
                 catch = generate_random_specimen('bugs')
             if catch['name'] in ['wasp', 'scorpion', 'tarantula']:
+                update_profile(str(ctx.author.id), 'swarm_count')
                 swarm = await ctx.send(f'A {catch['name']} is chasing you! '
                                        f'You have 5 seconds to catch the correct bug!')
                 for emoji, name in buttons.items():
