@@ -90,8 +90,7 @@ def update_profile(user_id, command):
                 'last_reset': today
             })
             return True
-    else:
-        return False
+
 
 
 def generate_random_villager(user_id, new_profile=False):

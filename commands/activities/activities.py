@@ -7,10 +7,10 @@ import random
 from util.activities import (fetch_species, fetch_specimen, fetch_fossils, fetch_fossil_group, fetch_single_fossil,
                              fetch_item_info)
 from commands.user.profile import (add_to_inventory, has_tool, update_health, add_to_museum, get_user_profile,
-                                   update_bells, has_item, remove_from_inventory)
+                                   update_bells, has_item, remove_from_inventory, update_profile)
 
 
-def generate_random_specimen(species):
+def generate_random_specimen(species, no_swarm=False):
     current_month = datetime.datetime.now().strftime('%m')
     if species == 'fossils':
         available_species = fetch_fossils()
@@ -27,10 +27,16 @@ def generate_random_specimen(species):
 
         for specimen in available_species:
             species_list.extend([specimen] * int(rarity[specimen['rarity']] * 100))
-    elif species == 'bugs':
+    elif species == 'bugs' and not no_swarm:
         for specimen in available_species:
             if specimen['name'] in ['wasp', 'scorpion', 'tarantula']:
                 species_list.extend([specimen] * int(0.09 * 100))
+            else:
+                species_list.append(specimen)
+    elif species == 'bugs' and no_swarm:
+        for specimen in available_species:
+            if specimen['name'] in ['wasp', 'scorpion', 'tarantula']:
+                species_list.pop()
             else:
                 species_list.append(specimen)
     else:
@@ -112,8 +118,12 @@ class Activities(commands.Cog):
         await ctx.defer()
         buttons = {'\U0001F41D': 'wasp', '\U0001F982': 'scorpion', '\U0001F577': 'tarantula'}
         tool = has_tool(str(ctx.author.id), 'net')
+        swarm_count = update_profile(str(ctx.author.id), 'swarm_count')
         if tool:
-            catch = generate_random_specimen('bugs')
+            if not swarm_count:
+                catch = generate_random_specimen('bugs', no_swarm=True)
+            else:
+                catch = generate_random_specimen('bugs')
             if catch['name'] in ['wasp', 'scorpion', 'tarantula']:
                 swarm = await ctx.send(f'A {catch['name']} is chasing you! '
                                        f'You have 5 seconds to catch the correct bug!')
@@ -144,31 +154,35 @@ class Activities(commands.Cog):
     async def dig(self, ctx: discord.ApplicationContext):
         await ctx.defer()
         tool = has_tool(str(ctx.author.id), 'shovel')
+        fossil_count = update_profile(str(ctx.author.id), 'fossil_count')
         if tool:
-            catch = generate_random_specimen('fossils')
-            fossil_info = fetch_specimen('fossils', catch['name'].replace(' ', '_'))
-            museum = add_to_museum(str(ctx.author.id), 'fossils', fossil_info.get('name'))
-
-            fossil_group = fossil_info.get('fossil_group')
-            if fossil_group:
-                fossil_description = fetch_fossil_group(fossil_group)
+            if not fossil_count:
+                await ctx.respond(f'Hmm...There are no more holes to dig for fossils today...')
             else:
-                fossil_description = fetch_single_fossil(fossil_info.get('name'))
+                catch = generate_random_specimen('fossils')
+                fossil_info = fetch_specimen('fossils', catch['name'].replace(' ', '_'))
+                museum = add_to_museum(str(ctx.author.id), 'fossils', fossil_info.get('name'))
 
-            message = discord.Embed(title=f'{fossil_info.get('name').title()}',
-                                    color=0x9dffb0,
-                                    description=f'{fossil_description}')
-            message.set_thumbnail(url=f'{fossil_info['image_url']}')
-            message.add_field(name='',
-                              value=f'**Price:** {fossil_info.get('sell')} Bells')
-            await ctx.respond(embed=message)
-            if isinstance(tool, str):
-                await ctx.send(tool)
-            if not museum:
-                add = add_to_inventory(str(ctx.author.id), {'name': fossil_info.get('name'),
-                                                            'sell': int(fossil_info.get('sell_nook'))}, 1)
-                if add:
-                    await ctx.send(add)
+                fossil_group = fossil_info.get('fossil_group')
+                if fossil_group:
+                    fossil_description = fetch_fossil_group(fossil_group)
+                else:
+                    fossil_description = fetch_single_fossil(fossil_info.get('name'))
+
+                message = discord.Embed(title=f'{fossil_info.get('name').title()}',
+                                        color=0x9dffb0,
+                                        description=f'{fossil_description}')
+                message.set_thumbnail(url=f'{fossil_info['image_url']}')
+                message.add_field(name='',
+                                  value=f'**Price:** {fossil_info.get('sell')} Bells')
+                await ctx.respond(embed=message)
+                if isinstance(tool, str):
+                    await ctx.send(tool)
+                if not museum:
+                    add = add_to_inventory(str(ctx.author.id), {'name': fossil_info.get('name'),
+                                                                'sell': int(fossil_info.get('sell_nook'))}, 1)
+                    if add:
+                        await ctx.send(add)
         else:
             await ctx.respond(f'You don\'t have a shovel! Visit Nook\'s Cranny to buy one and dig for fossils.')
 
@@ -208,50 +222,55 @@ class Activities(commands.Cog):
         chances = ['apple', 'cherry', 'orange', 'peach', 'pear']
         shake_chances = []
 
-        for item in chances:
-            if item == native_fruit:
-                shake_chances.extend([item] * 8)
-            else:
-                shake_chances.extend([item] * 2)
-        shake_chances.extend(['wasp', 'bells'])
+        fruit_count = update_profile(str(ctx.author.id), 'fruit_count')
+        if not fruit_count:
+            await ctx.respond('There are no more trees to shake fruit from for today!')
+        else:
+            for item in chances:
+                if item == native_fruit:
+                    shake_chances.extend([item] * 8)
+                else:
+                    shake_chances.extend([item] * 2)
+            shake_chances.extend(['wasp', 'bells'])
 
-        shake = random.choice(shake_chances)
-        if shake == 'wasp':
-            catch = {'name': 'wasp'}
-            tool = has_tool(str(ctx.author.id), 'net')
-            if tool:
-                swarm = await ctx.send(f'A wasp is chasing you! '
-                                       f'You have 5 seconds to catch it!')
-                for emoji, name in buttons.items():
-                    await swarm.add_reaction(emoji)
-                try:
-                    react, user = await self.bot.wait_for('reaction_add', timeout=5,
-                                                          check=lambda r, u: r.message.id == swarm.id
-                                                          and u.id == ctx.author.id and r.emoji in buttons)
-                    await swarm.remove_reaction(react.emoji, user)
+            shake = random.choice(shake_chances)
 
-                    if catch['name'] == buttons[react.emoji]:
-                        await swarm.delete()
-                        await catch_bug(ctx, catch)
-                    else:
+            if shake == 'wasp':
+                catch = {'name': 'wasp'}
+                tool = has_tool(str(ctx.author.id), 'net')
+                if tool:
+                    swarm = await ctx.send(f'A wasp is chasing you! '
+                                           f'You have 5 seconds to catch it!')
+                    for emoji, name in buttons.items():
+                        await swarm.add_reaction(emoji)
+                    try:
+                        react, user = await self.bot.wait_for('reaction_add', timeout=5,
+                                                              check=lambda r, u: r.message.id == swarm.id
+                                                              and u.id == ctx.author.id and r.emoji in buttons)
+                        await swarm.remove_reaction(react.emoji, user)
+
+                        if catch['name'] == buttons[react.emoji]:
+                            await swarm.delete()
+                            await catch_bug(ctx, catch)
+                        else:
+                            await swarm.delete()
+                            await swarm_sting(ctx, catch)
+                    except asyncio.TimeoutError:
                         await swarm.delete()
                         await swarm_sting(ctx, catch)
-                except asyncio.TimeoutError:
-                    await swarm.delete()
+                else:
+                    await ctx.respond(f'You don\'t have a net to catch a wasp!')
                     await swarm_sting(ctx, catch)
+            elif shake == 'bells':
+                await ctx.respond('You\'ve found **1,000 bells**.')
+                update_bells(str(ctx.author.id), 1000)
             else:
-                await ctx.respond(f'You don\'t have a net to catch a wasp!')
-                await swarm_sting(ctx, catch)
-        elif shake == 'bells':
-            await ctx.respond('You\'ve found **1,000 bells**.')
-            update_bells(str(ctx.author.id), 1000)
-        else:
-            await ctx.respond(f'You\'ve found **1x {shake.title()}**.')
-            fruit_info = fetch_item_info(shake)
-            add = add_to_inventory(str(ctx.author.id), {'name': fruit_info.get('name'),
-                                                        'sell': int(fruit_info.get('sell'))}, 1)
-            if add:
-                await ctx.send(add)
+                await ctx.respond(f'You\'ve found **1x {shake.title()}**.')
+                fruit_info = fetch_item_info(shake)
+                add = add_to_inventory(str(ctx.author.id), {'name': fruit_info.get('name'),
+                                                            'sell': int(fruit_info.get('sell'))}, 1)
+                if add:
+                    await ctx.send(add)
 
     @commands.slash_command(name='eat', description='Eat fruits to gain health points back')
     async def eat(self, ctx: discord.ApplicationContext, quantity: int, fruit_name: str):
