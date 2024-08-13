@@ -125,7 +125,8 @@ def generate_random_villager(user_id, new_profile=False):
     user_profile = get_user_profile(user_id).to_dict()
 
     today = datetime.datetime.now().strftime('%Y-%m-%d')
-    random.seed(today)
+    seed = user_id + today.replace('-', '')
+    random.seed(int(seed))
 
     if new_profile:
         visitor_ids = random.sample(range(1, villagers_length - 1), 2)

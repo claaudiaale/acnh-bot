@@ -7,7 +7,7 @@ import random
 from util.activities import (fetch_species, fetch_specimen, fetch_fossils, fetch_fossil_group, fetch_single_fossil,
                              fetch_item_info)
 from commands.user.profile import (add_to_inventory, has_tool, update_health, add_to_museum, get_user_profile,
-                                   update_bells, has_item, remove_from_inventory, update_profile, get_swarm_limit)
+                                   update_bells, has_item, remove_from_inventory, update_profile, get_limit)
 
 
 def generate_random_specimen(species, no_swarm=False):
@@ -85,6 +85,7 @@ class Activities(commands.Cog):
         self.bot = bot
 
     @commands.slash_command(name='fish', description='Use your fishing rod to fish')
+    @commands.cooldown(1, 45, commands.BucketType.user)
     async def fish(self, ctx: discord.ApplicationContext):
         await ctx.defer()
         tool = has_tool(str(ctx.author.id), 'rod')
@@ -113,12 +114,18 @@ class Activities(commands.Cog):
         else:
             await ctx.respond(f'You don\'t have a fishing rod! Visit Nook\'s Cranny to buy one and fish.')
 
+    @fish.error
+    async def fish_error(self, ctx: discord.ApplicationContext, error):
+        if isinstance(error, commands.CommandOnCooldown):
+            await ctx.respond(f'Please wait **{round(error.retry_after)} seconds** for more fish to spawn.')
+
     @commands.slash_command(name='bug', description='Use your net to catch bugs')
+    @commands.cooldown(1, 45, commands.BucketType.user)
     async def bug(self, ctx: discord.ApplicationContext):
         await ctx.defer()
         buttons = {'\U0001F41D': 'wasp', '\U0001F982': 'scorpion', '\U0001F577': 'tarantula'}
         tool = has_tool(str(ctx.author.id), 'net')
-        swarm_limit = get_swarm_limit(str(ctx.author.id)).get('swarm_count')
+        swarm_limit = get_limit(str(ctx.author.id)).get('swarm_count')
         if tool:
             if swarm_limit == 5:
                 catch = generate_random_specimen('bugs', no_swarm=True)
@@ -151,7 +158,13 @@ class Activities(commands.Cog):
         else:
             await ctx.respond(f'You don\'t have a net! Visit Nook\'s Cranny to buy one and catch bugs.')
 
+    @bug.error
+    async def bug_error(self, ctx: discord.ApplicationContext, error):
+        if isinstance(error, commands.CommandOnCooldown):
+            await ctx.respond(f'Please wait **{round(error.retry_after)} seconds** for more bugs to spawn.')
+
     @commands.slash_command(name='dig', description='Use your shovel to dig for fossils')
+    @commands.cooldown(1, 45, commands.BucketType.user)
     async def dig(self, ctx: discord.ApplicationContext):
         await ctx.defer()
         tool = has_tool(str(ctx.author.id), 'shovel')
@@ -187,7 +200,13 @@ class Activities(commands.Cog):
         else:
             await ctx.respond(f'You don\'t have a shovel! Visit Nook\'s Cranny to buy one and dig for fossils.')
 
+    @dig.error
+    async def dig_error(self, ctx: discord.ApplicationContext, error):
+        if isinstance(error, commands.CommandOnCooldown):
+            await ctx.respond(f'Please wait **{round(error.retry_after)} seconds** to find another hole for fossils.')
+
     @commands.slash_command(name='dive', description='Dive to collect sea creatures')
+    @commands.cooldown(1, 45, commands.BucketType.user)
     async def dive(self, ctx: discord.ApplicationContext):
         await ctx.defer()
         tool = has_tool(str(ctx.author.id), 'snorkel')
@@ -214,7 +233,13 @@ class Activities(commands.Cog):
         else:
             await ctx.respond(f'You don\'t have a snorkel! Visit Nook\'s Cranny to buy one and dive for sea creatures.')
 
+    @dive.error
+    async def dive_error(self, ctx: discord.ApplicationContext, error):
+        if isinstance(error, commands.CommandOnCooldown):
+            await ctx.respond(f'Please wait **{round(error.retry_after)} seconds** for more sea creatures to spawn.')
+
     @commands.slash_command(name='shake', description='Shake trees for fruit')
+    @commands.cooldown(1, 45, commands.BucketType.user)
     async def shake(self, ctx: discord.ApplicationContext):
         await ctx.defer()
         buttons = {'\U0001F41D': 'wasp', '\U0001F982': 'scorpion', '\U0001F577': 'tarantula'}
@@ -272,6 +297,11 @@ class Activities(commands.Cog):
                                                             'sell': int(fruit_info.get('sell'))}, 1)
                 if add:
                     await ctx.send(add)
+
+    @shake.error
+    async def shake_error(self, ctx: discord.ApplicationContext, error):
+        if isinstance(error, commands.CommandOnCooldown):
+            await ctx.respond(f'Please wait **{round(error.retry_after)} seconds** to find another tree to shake.')
 
     @commands.slash_command(name='eat', description='Eat fruits to gain health points back')
     async def eat(self, ctx: discord.ApplicationContext, quantity: int, fruit_name: str):
