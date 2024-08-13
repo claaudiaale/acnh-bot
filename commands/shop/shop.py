@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from util.tools import fetch_all_tools, fetch_tools
-from util.activities import fetch_item_info
+from util.activities import fetch_item_info, fetch_clothing_info
 from commands.user.profile import add_to_inventory, has_item, remove_from_inventory, update_bells, get_user_profile
 import asyncio
 
@@ -62,6 +62,12 @@ class Shop(commands.Cog):
         fruit_page = generate_shop_message([], fruit=True, user_id=(str(ctx.author.id)))
         pages.insert(0, fruit_page)
 
+        snorkel = fetch_clothing_info('snorkel_mask')
+        snorkel_price = snorkel.get('buy')[0]
+        pages[2].add_field(name=f'{snorkel.get('name').title()}',
+                           value=f'**Price:** {snorkel_price.get('price')} Bells',
+                           inline=False)
+
         current_page = 0
         message = await ctx.respond(embed=pages[current_page])
         for b in buttons:
@@ -86,7 +92,10 @@ class Shop(commands.Cog):
     @commands.slash_command(name='buy', description='Buy items from Nook\'s Cranny')
     async def buy(self, ctx: discord.ApplicationContext, quantity: int, item: str):
         buttons = ['\u274C', '\u2705']
-        item_info = fetch_tools(item.replace(' ', '_'))
+        if item == 'snorkel mask':
+            item_info = fetch_clothing_info('snorkel_mask')
+        else:
+            item_info = fetch_tools(item.replace(' ', '_'))
         price_info = item_info.get('price', [])
 
         if len(price_info) > 0:
