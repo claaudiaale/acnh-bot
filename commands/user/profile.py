@@ -18,15 +18,11 @@ def create_user_profile(user_id):
         'health': 5,
         'bells': 100000,
         'villagers': new_villagers,
-        'museum': {
-            'bugs': [],
-            'fish': [],
-            'fossils': []
-        },
         'fruit': random.choice(['apple', 'cherry', 'orange', 'peach', 'pear'])
     })
 
     add_museum(user_id)
+    add_limits(user_id)
 
     inventory = user_ref.collection('inventory')
     new_tools = ['flimsy_shovel', 'flimsy_fishing_rod', 'flimsy_net']
@@ -56,6 +52,18 @@ def add_museum(user_id):
         })
 
 
+def add_limits(user_id):
+    user_ref = db.collection('users').document(user_id).collection('daily')
+    user_ref.document('limits').set({
+        'campsite': False,
+        'daily_command': False,
+        'fossil_count': 0,
+        'fruit_count': 0,
+        'swarm_count': 0,
+        'last_reset': ''
+    })
+
+
 def get_user_profile(user_id):
     user_profile = db.collection('users').document(user_id)
     return user_profile.get()
@@ -63,18 +71,34 @@ def get_user_profile(user_id):
 
 def update_profile(user_id, command):
     today = datetime.datetime.now().strftime('%Y-%m-%d')
-    user_profile = get_user_profile(user_id).to_dict()
-    last_update = user_profile.get(f'{command}_last_update', '')
+    daily_limits = db.collection('users').document(user_id).collection('daily').document('limits')
+    limits = daily_limits.get().to_dict()
 
-    if last_update != today:
-        return True
-    return False
+    last_reset = limits.get('last_reset', '')
+    check = limits.get(command)
+    if command in ['fossil_count', 'fruit_count', 'swarm_count']:
+        if last_reset != today or check < 5:
+            daily_limits.update({
+                f'{command}': firestore.Increment(1),
+                'last_reset': today
+            })
+            return True
+    elif command in ['daily_command', 'campsite']:
+        if last_reset != today or not check:
+            daily_limits.update({
+                f'{command}': True,
+                'last_reset': today
+            })
+            return True
+    else:
+        return False
 
 
 def generate_random_villager(user_id, new_profile=False):
     villagers_length = len(fetch_villagers())
     user_profile_ref = db.collection('users').document(user_id)
     user_profile = get_user_profile(user_id).to_dict()
+
     today = datetime.datetime.now().strftime('%Y-%m-%d')
     random.seed(today)
 
@@ -82,7 +106,7 @@ def generate_random_villager(user_id, new_profile=False):
         visitor_ids = random.sample(range(1, villagers_length - 1), 2)
         return visitor_ids
 
-    if not update_profile(user_id, 'visitor'):
+    if not update_profile(user_id, 'campsite'):
         return user_profile.get('visitor')
 
     residents = user_profile.get('villagers')
@@ -91,7 +115,6 @@ def generate_random_villager(user_id, new_profile=False):
         if visitor_id not in residents:
             user_profile_ref.update({
                 'visitor': visitor_id,
-                'visitor_last_update': today
             })
             return visitor_id
 
@@ -294,7 +317,7 @@ class Profile(commands.Cog):
 
     @commands.slash_command(name='daily', description='Get 10,000 free bells daily')
     async def daily(self, ctx: discord.ApplicationContext):
-        if not update_profile(str(ctx.author.id), 'daily'):
+        if not update_profile(str(ctx.author.id), 'daily_command'):
             message = discord.Embed(color=0x9dffb0,
                                     description=f'Welcome back, {ctx.author.name}. You\'ve already claimed your daily '
                                                 f'reward, come back tomorrow!')
@@ -308,6 +331,11 @@ class Profile(commands.Cog):
             update_bells(str(ctx.author.id), 10000)
             user_ref.update({
                 'daily_last_update': today
+            })
+
+            limits = db.collection('users').document(str(ctx.author.id)).collection('daily').document('limits')
+            limits.update({
+                'daily_command': True
             })
 
             message = discord.Embed(color=0x81f1f7,
