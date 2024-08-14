@@ -3,8 +3,9 @@ from discord.ext import commands
 import asyncio
 import string
 import datetime
-from commands.user.profile import generate_random_art
+from commands.user.profile import generate_random_art, get_user_profile, add_to_inventory, update_bells
 from util.redd import fetch_one_art
+from util.embed import embed_arrows
 
 
 def generate_art_message(art_info):
@@ -33,6 +34,19 @@ def generate_art_message(art_info):
     return message_embed
 
 
+async def check_for_redd():
+    day = datetime.datetime.now().strftime('%A')
+    return day == 'Sunday'
+
+
+async def get_artwork(current_shop, artwork):
+    artwork_name = artwork.lower()
+    for art in current_shop:
+        if artwork_name == art['name'].lower():
+            return art
+    return None
+
+
 class Redd(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -40,41 +54,70 @@ class Redd(commands.Cog):
     @commands.slash_command(name='shopredd', description='See what artwork Redd has to sell')
     async def shopredd(self, ctx: discord.ApplicationContext):
         await ctx.defer()
-        day = datetime. datetime.now().strftime('%A')
-        if day == 'Sunday':
-            buttons = ['\u2B05', '\u27A1']
-            pages = []
-            current_shop = generate_random_art(str(ctx.author.id))
 
-            for art in current_shop:
-                pages.append(generate_art_message(art))
-
-            current_page = 0
-            message = await ctx.respond(embed=pages[current_page])
-            for b in buttons:
-                await message.add_reaction(b)
-
-            while True:
-                try:
-                    react, user = await self.bot.wait_for('reaction_add', timeout=60,
-                                                          check=lambda r, u: r.message.id == message.id
-                                                          and u.id == ctx.author.id and r.emoji in buttons)
-                    await message.remove_reaction(react.emoji, user)
-                except asyncio.TimeoutError:
-                    return await message.delete()
-
-                else:
-                    if react.emoji == buttons[0] and current_page > 0:
-                        current_page -= 1
-                    elif react.emoji == buttons[1] and current_page < len(pages) - 1:
-                        current_page += 1
-                    await message.edit(embed=pages[current_page])
-        elif day != 'Sunday':
+        if not await check_for_redd():
             await ctx.respond('Redd only visits your island on Sundays, please try again another day.')
+            return
 
-    # @commands.slash_command(name='shopredd', description='See what artwork Redd has to sell')
-    # async def shopredd(self, ctx: discord.ApplicationContext):
-    #     pass
+        pages = []
+        current_shop = generate_random_art(str(ctx.author.id))
+
+        for art in current_shop:
+            pages.append(generate_art_message(art))
+
+        await embed_arrows(self, ctx, pages)
+
+    @commands.slash_command(name='buyredd', description='Buy artwork from Redd')
+    async def buyredd(self, ctx: discord.ApplicationContext, quantity: int, artwork: str):
+        await ctx.defer()
+        buttons = ['\u274C', '\u2705']
+
+        if not await check_for_redd():
+            await ctx.respond('Redd only visits your island on Sundays, please try again another day.')
+            return
+
+        user_profile = get_user_profile(str(ctx.author.id))
+        current_shop = user_profile.get('artwork')
+
+        can_buy = await get_artwork(current_shop, artwork)
+        if not can_buy:
+            await ctx.respond('This piece of art is currently not available in shop.')
+            return
+
+        await ctx.respond(embed=generate_art_message(can_buy))
+        confirmation = await ctx.send(f'Buy **{quantity}x {artwork.title()}** for '
+                                      f'{4980 * quantity} Bells?')
+        for b in buttons:
+            await confirmation.add_reaction(b)
+
+        while True:
+            try:
+                react, user = await self.bot.wait_for(
+                    'reaction_add', timeout=60,
+                    check=lambda r, u: r.message.id == confirmation.id
+                    and u.id == ctx.author.id and r.emoji in buttons)
+                await confirmation.remove_reaction(react.emoji, user)
+            except asyncio.TimeoutError:
+                return await confirmation.delete()
+
+            else:
+                if react.emoji == buttons[0]:
+                    await confirmation.delete()
+                    await ctx.send(f'Buy action cancelled.')
+                    return
+                elif react.emoji == buttons[1]:
+                    add = add_to_inventory(str(ctx.author.id), can_buy, quantity)
+                    update_bells(str(ctx.author.id), (4980 * quantity), buy=True)
+
+                    message = discord.Embed(color=0x9dffb0,
+                                            description=f'You just bought **{quantity}x '
+                                                        f'{artwork.title()}**. '
+                                                        f'Thanks for visiting, come back again soon!')
+                    message.set_author(name='Redd',
+                                       icon_url='https://dodo.ac/np/images/f/f3/Redd_NL.png')
+                    await ctx.send(embed=message)
+                    if add:
+                        await ctx.send(add)
 
 
 def setup(bot):

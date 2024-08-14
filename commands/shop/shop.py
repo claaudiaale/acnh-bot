@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from util.tools import fetch_all_tools, fetch_tools
+from util.embed import embed_arrows
 from util.activities import fetch_item_info, fetch_clothing_info
 from commands.user.profile import add_to_inventory, has_item, remove_from_inventory, update_bells, get_user_profile
 import asyncio
@@ -54,7 +55,6 @@ class Shop(commands.Cog):
     @commands.slash_command(name='shop', description='Explore what Nook\'s Cranny has in store to purchase')
     async def shop(self, ctx: discord.ApplicationContext):
         await ctx.defer()
-        buttons = ['\u2B05', '\u27A1']
         tool_names = ['shovel', 'fishing rod', 'net']
         tool_info = [fetch_all_tools(tool) for tool in tool_names]
         pages = [generate_shop_message(info) for info in tool_info]
@@ -68,26 +68,7 @@ class Shop(commands.Cog):
                            value=f'**Price:** {snorkel_price.get('price')} Bells',
                            inline=False)
 
-        current_page = 0
-        message = await ctx.respond(embed=pages[current_page])
-        for b in buttons:
-            await message.add_reaction(b)
-
-        while True:
-            try:
-                react, user = await self.bot.wait_for('reaction_add', timeout=60,
-                                                      check=lambda r, u: r.message.id == message.id
-                                                      and u.id == ctx.author.id and r.emoji in buttons)
-                await message.remove_reaction(react.emoji, user)
-            except asyncio.TimeoutError:
-                return await message.delete()
-
-            else:
-                if react.emoji == buttons[0] and current_page > 0:
-                    current_page -= 1
-                elif react.emoji == buttons[1] and current_page < len(pages) - 1:
-                    current_page += 1
-                await message.edit(embed=pages[current_page])
+        await embed_arrows(self, ctx, pages)
 
     @commands.slash_command(name='buy', description='Buy items from Nook\'s Cranny')
     async def buy(self, ctx: discord.ApplicationContext, quantity: int, item: str):
