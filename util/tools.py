@@ -23,8 +23,8 @@ def fetch_tools(tool_name):
             uses = int(max_uses[1])
         else:
             uses = int(uses)
-            if uses > 10:
-                uses = uses * 0.2
+            if uses >= 10:
+                uses = uses * 0.3
 
         tool_info = {
             'name': data.get('name'),

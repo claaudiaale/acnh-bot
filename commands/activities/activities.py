@@ -85,7 +85,7 @@ class Activities(commands.Cog):
         self.bot = bot
 
     @commands.slash_command(name='fish', description='Use your fishing rod to fish')
-    @commands.cooldown(1, 45, commands.BucketType.user)
+    @commands.cooldown(1, 20, commands.BucketType.user)
     async def fish(self, ctx: discord.ApplicationContext):
         await ctx.defer()
         tool = has_tool(str(ctx.author.id), 'rod')
@@ -120,7 +120,7 @@ class Activities(commands.Cog):
             await ctx.respond(f'Please wait **{round(error.retry_after)} seconds** for more fish to spawn.')
 
     @commands.slash_command(name='bug', description='Use your net to catch bugs')
-    @commands.cooldown(1, 45, commands.BucketType.user)
+    @commands.cooldown(1, 20, commands.BucketType.user)
     async def bug(self, ctx: discord.ApplicationContext):
         await ctx.defer()
         buttons = {'\U0001F41D': 'wasp', '\U0001F982': 'scorpion', '\U0001F577': 'tarantula'}
@@ -164,7 +164,7 @@ class Activities(commands.Cog):
             await ctx.respond(f'Please wait **{round(error.retry_after)} seconds** for more bugs to spawn.')
 
     @commands.slash_command(name='dig', description='Use your shovel to dig for fossils')
-    @commands.cooldown(1, 45, commands.BucketType.user)
+    @commands.cooldown(1, 30, commands.BucketType.user)
     async def dig(self, ctx: discord.ApplicationContext):
         await ctx.defer()
         tool = has_tool(str(ctx.author.id), 'shovel')
@@ -206,7 +206,7 @@ class Activities(commands.Cog):
             await ctx.respond(f'Please wait **{round(error.retry_after)} seconds** to find another hole for fossils.')
 
     @commands.slash_command(name='dive', description='Dive to collect sea creatures')
-    @commands.cooldown(1, 45, commands.BucketType.user)
+    @commands.cooldown(1, 30, commands.BucketType.user)
     async def dive(self, ctx: discord.ApplicationContext):
         await ctx.defer()
         tool = has_tool(str(ctx.author.id), 'snorkel')
@@ -239,7 +239,7 @@ class Activities(commands.Cog):
             await ctx.respond(f'Please wait **{round(error.retry_after)} seconds** for more sea creatures to spawn.')
 
     @commands.slash_command(name='shake', description='Shake trees for fruit')
-    @commands.cooldown(1, 45, commands.BucketType.user)
+    @commands.cooldown(1, 30, commands.BucketType.user)
     async def shake(self, ctx: discord.ApplicationContext):
         await ctx.defer()
         buttons = {'\U0001F41D': 'wasp', '\U0001F982': 'scorpion', '\U0001F577': 'tarantula'}
