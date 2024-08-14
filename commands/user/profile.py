@@ -9,6 +9,7 @@ from google.cloud import firestore
 from views.database import db, is_registered
 from util.villagers import fetch_villagers, get_villager_name
 from util.tools import fetch_tools
+from util.redd import fetch_all_art, fetch_one_art
 
 
 def create_user_profile(user_id):
@@ -60,7 +61,8 @@ def add_limits(user_id):
         'fossil_count': 0,
         'fruit_count': 0,
         'swarm_count': 0,
-        'last_reset': ''
+        'last_reset': '',
+        'redd': False
     })
 
 
@@ -103,7 +105,7 @@ def update_profile(user_id, command):
                 'last_reset': today
             })
             return True
-    elif command in ['daily_command', 'campsite']:
+    elif command in ['daily_command', 'campsite', 'redd']:
         if last_reset != today or not check:
             if last_reset != today:
                 reset_data(user_id, command)
@@ -297,6 +299,61 @@ def add_to_museum(user_id, specimen_type, specimen_name):
 def get_museum_info(user_id, specimen_type):
     doc_ref = db.collection('users').document(user_id).collection('museum').document(specimen_type)
     return doc_ref.get().to_dict()
+
+
+def generate_random_art(user_id):
+    user_profile_ref = db.collection('users').document(user_id)
+    user_profile = db.collection('users').document(user_id).get()
+
+    today = datetime.datetime.now().strftime('%Y-%m-%d')
+    seed = user_id + today.replace('-', '')
+    random.seed(int(seed))
+
+    if not update_profile(user_id, 'redd'):
+        current_shop = user_profile.get('artwork')
+        return current_shop
+    else:
+        artwork = fetch_all_art()
+        current_shop = random.sample(artwork, 3)
+        art_information = [generate_art_info(art) for art in current_shop]
+        user_profile_ref.update({
+            'artwork': art_information
+        })
+        return art_information
+
+
+def generate_art_info(art):
+    art_info = fetch_one_art(art['name'].replace(' ', '_'))
+
+    if art_info['has_fake'] and art_info['art_type'] == 'Painting':
+        decision = random.choice(['fake_texture_url', 'texture_url'])
+        art_info[decision] = ''
+    elif art_info['has_fake'] and art_info['art_type'] == 'Statue':
+        decision = random.choice(['fake_image_url', 'image_url'])
+        art_info[decision] = ''
+
+    information = {}
+    thumbnail = None
+
+    if art_info['art_type'] == 'Painting':
+        if art_info['texture_url']:
+            thumbnail = art_info['texture_url']
+            information['authenticity'] = True
+        elif art_info['fake_texture_url']:
+            thumbnail = art_info['fake_texture_url']
+            information['authenticity'] = False
+    else:
+        if art_info['image_url']:
+            thumbnail = art_info['image_url']
+            information['authenticity'] = True
+        elif art_info['fake_image_url']:
+            thumbnail = art_info['fake_image_url']
+            information['authenticity'] = False
+
+    information['name'] = art_info['name']
+    information['url'] = thumbnail
+
+    return information
 
 
 class Profile(commands.Cog):

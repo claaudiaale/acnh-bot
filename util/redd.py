@@ -37,7 +37,6 @@ def fetch_one_art(art_name):
     response = requests.get(url, headers=headers)
 
     if response.status_code == 200:
-        print(response.json())
         return response.json()
     else:
         raise Exception(f"Error: {response.status_code}: {response.text}")
