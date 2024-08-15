@@ -3,8 +3,8 @@ from discord.ext import commands
 from util.tools import fetch_all_tools, fetch_tools
 from util.embed import embed_arrows, handle_user_selection
 from util.activities import fetch_item_info, fetch_clothing_info
-from commands.user.profile import add_to_inventory, has_item, remove_from_inventory, update_bells, get_user_profile
-
+from commands.user.profile import (add_to_inventory, has_item, remove_from_inventory, update_bells, get_user_profile,
+                                   has_paintings)
 
 def sort_tools(tool):
     tool_order = {'flimsy': 0, 'golden': 2}
@@ -45,6 +45,25 @@ def generate_shop_message(info, fruit=False, user_id=None):
                               value=f'**Price:** {(item.get('sell')*4)} Bells',
                               inline=False)
     return message
+
+
+async def handle_sell_action(ctx, react, buttons, message, inv_item, quantity, item):
+    if react.emoji == buttons[0]:
+        await message.delete()
+        await ctx.send(f'Sell action cancelled.')
+        return
+    elif react.emoji == buttons[1]:
+        remove_from_inventory(str(ctx.author.id), inv_item[1], quantity)
+        update_bells(str(ctx.author.id), (inv_item[0].get('sell') * quantity))
+
+        message = discord.Embed(color=0x9dffb0,
+                                description=f'You just sold **{quantity}x {item.title()}**. Thanks '
+                                            f'for visiting, come back again soon!')
+        message.set_author(name='Timmy and Tommy',
+                           icon_url='https://play.nintendo.com/'
+                                    'images/masthead-img-timmy-tommy.f4b49fb7.cf659c6f.png')
+        await ctx.send(embed=message)
+        return
 
 
 class Shop(commands.Cog):
@@ -122,8 +141,20 @@ class Shop(commands.Cog):
     async def sell(self, ctx: discord.ApplicationContext, quantity: int, item: str):
         await ctx.defer()
         buttons = ['\u274C', '\u2705']
+        if 'painting' in item.strip().lower() or 'statue' in item.strip().lower():
+            if not has_paintings(str(ctx.author.id), item):
+                donate = discord.Embed(color=0x9dffb0,
+                                       description=f'Oops! You have more than 1 kind of these pieces in your '
+                                                   f'inventory, it would be best to visit Blathers and identify '
+                                                   f'authenticity before selling us a piece. See you again soon!')
+                donate.set_author(name='Timmy and Tommy',
+                                  icon_url='https://play.nintendo.com/'
+                                           'images/masthead-img-timmy-tommy.f4b49fb7.cf659c6f.png')
+                await ctx.respond(embed=donate)
+                return
         inv_item = has_item(str(ctx.author.id), item, quantity)
         if inv_item[0]:
+
             confirmation = discord.Embed(color=0x9dffb0,
                                          description=f'**{quantity}x {item.title()}?** Sure! How about if I offer you '
                                                      f'{inv_item[0].get('sell') * quantity} Bells?')
@@ -136,27 +167,13 @@ class Shop(commands.Cog):
                 await message.add_reaction(b)
 
             while True:
-                react, user = await handle_user_selection(self, ctx, confirmation, buttons)
+                react, user = await handle_user_selection(self, ctx, message, buttons)
                 if not react:
                     return
 
                 else:
-                    if react.emoji == buttons[0]:
-                        await message.delete()
-                        await ctx.send(f'Sell action cancelled.')
-                        return
-                    elif react.emoji == buttons[1]:
-                        remove_from_inventory(str(ctx.author.id), inv_item[1], quantity)
-                        update_bells(str(ctx.author.id), (inv_item[0].get('sell') * quantity))
-
-                        message = discord.Embed(color=0x9dffb0,
-                                                description=f'You just sold **{quantity}x {item.title()}**. Thanks '
-                                                            f'for visiting, come back again soon!')
-                        message.set_author(name='Timmy and Tommy',
-                                           icon_url='https://play.nintendo.com/'
-                                                    'images/masthead-img-timmy-tommy.f4b49fb7.cf659c6f.png')
-                        await ctx.send(embed=message)
-                        return
+                    await handle_sell_action(ctx, react, buttons, message, inv_item, quantity, item)
+                    return
         else:
             await ctx.respond(f'..Hmm....You don\'t have **{quantity}x {item.title()}** to sell right now...')
             return

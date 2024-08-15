@@ -203,13 +203,16 @@ def add_to_inventory(user_id, item, quantity):
 def add_inventory_stack(user_id, item, quantity):
     user_ref = db.collection('users').document(user_id)
     inventory_ref = user_ref.collection('inventory')
-    inv_item = inventory_ref.where(filter=FieldFilter('name', '==', item.get('name').lower())).get()
+    inv_items = inventory_ref.where(filter=FieldFilter('name', '==', item.get('name').lower())).get()
 
-    if inv_item:
-        matched_item = inventory_ref.document(inv_item[0].id)
-        matched_item.update({
-            'count': firestore.Increment(quantity)
-        })
+    for inv_item in inv_items:
+        inv_item_data = inv_item.to_dict()
+        if (inv_item_data.get('authenticity') == item.get('authenticity') or
+                not inv_item_data.get('authenticity') and not item.get('authenticity')):
+            matched_item = inventory_ref.document(inv_item.id)
+            matched_item.update({
+                'count': firestore.Increment(quantity)
+            })
     else:
         item['count'] = quantity
         inventory_ref.add(item)
@@ -355,8 +358,17 @@ def generate_art_info(art):
 
     information['name'] = art_info['name']
     information['url'] = thumbnail
+    information['sell'] = 1245
 
     return information
+
+
+def has_paintings(user_id, artwork):
+    user_ref = db.collection('users').document(user_id)
+    inventory_ref = user_ref.collection('inventory')
+    inv_item = inventory_ref.where(filter=FieldFilter('name', '==', artwork)).get()
+
+    return len(inv_item) == 1
 
 
 class Profile(commands.Cog):
