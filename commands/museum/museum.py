@@ -1,7 +1,9 @@
 import discord
 from discord.ext import commands
-from commands.user.profile import get_museum_info
+from commands.user.profile import get_museum_info, has_item, add_to_museum, remove_from_inventory
 from util.activities import fetch_species, fetch_fossils
+from util.redd import fetch_all_art
+from util.embed import handle_user_selection
 
 
 async def generate_museum_message(ctx):
@@ -36,6 +38,39 @@ async def generate_museum_message(ctx):
     return message, completed_count, museum_count
 
 
+async def museum_check(ctx, artwork):
+    museum_info = get_museum_info(str(ctx.author.id), 'art')
+    for art in museum_info:
+        if artwork.lower() == art.lower():
+            message = discord.Embed(color=0x9dffb0,
+                                    description=f'Oops! You\'ve already donated this piece to the museum, perhaps '
+                                                f'the Nooklings will take up your offer on it.')
+            message.set_author(name='Blathers',
+                               icon_url='https://dodo.ac/np/images/1/1b/Blathers_NH.png')
+            return message
+    else:
+        return True
+
+
+async def authenticity_check(user_id, artwork):
+    if artwork[0]['authenticity']:
+        add_to_museum(user_id, 'art', artwork[0]['name'].lower())
+        remove_from_inventory(user_id, artwork[1], 1)
+        message = discord.Embed(color=0x9dffb0,
+                                description=f'Hoo! The **{artwork[0]['name'].title()}**? My sincerest thanks for your '
+                                            f'donation!')
+    else:
+        message = discord.Embed(color=0x9dffb0,
+                                description=f'Hoo! Upon closer examination, I have grave news to share with you! '
+                                            f'This work of art... is a FAKE! I\'m terribly sorry, you\'ll have to find '
+                                            f'some place else to display this. I\'ve heard the Nooklings may even '
+                                            f'take up your offer on it.')
+    message.set_author(name='Blathers',
+                       icon_url='https://dodo.ac/np/images/1/1b/Blathers_NH.png')
+
+    return message
+
+
 class Museum(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -52,6 +87,46 @@ class Museum(commands.Cog):
         museum_dict['description'] = description
         museum_embed = discord.Embed.from_dict(museum_dict)
         await museum.edit(embed=museum_embed)
+
+    @commands.slash_command(name='donate', description='Donate artwork to your museum')
+    async def donate(self, ctx: discord.ApplicationContext, artwork: str):
+        await ctx.defer()
+        buttons = ['\u274C', '\u2705']
+        artwork_info = has_item(str(ctx.author.id), artwork.lower(), 1)
+        if not artwork_info[0]:
+            await ctx.respond(f'..Hmm....You don\'t have the **{artwork.title()}** to donate right now...')
+            return
+        else:
+            all_art = fetch_all_art()
+            for art in all_art:
+                if art['name'].lower() == artwork.lower().strip():
+                    check = await museum_check(ctx, artwork)
+                    if isinstance(check, bool):
+                        confirm = await ctx.send(f'Are you sure you want to donate the **{artwork.title()}**?')
+                        for b in buttons:
+                            await confirm.add_reaction(b)
+
+                        while True:
+                            react, user = await handle_user_selection(self, ctx, confirm, buttons)
+                            if not react:
+                                return
+                            else:
+                                if react.emoji == buttons[0]:
+                                    await confirm.delete()
+                                    await ctx.respond(f'Donate action cancelled.')
+                                    return
+                                elif react.emoji == buttons[1]:
+                                    authenticity = await authenticity_check(str(ctx.author.id), artwork_info)
+                                    await ctx.respond(embed=authenticity)
+                    else:
+                        await ctx.respond(embed=check)
+            else:
+                message = discord.Embed(color=0x9dffb0,
+                                        description=f'Oops! Museum space is limited... there is no room for that '
+                                                    f'piece right now.')
+                message.set_author(name='Blathers',
+                                   icon_url='https://dodo.ac/np/images/1/1b/Blathers_NH.png')
+                await ctx.respond(embed=message)
 
 
 def setup(bot):

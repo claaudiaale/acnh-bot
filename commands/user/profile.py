@@ -48,7 +48,7 @@ def add_tools(user_ref):
 def add_museum(user_id):
     user_ref = db.collection('users').document(user_id).collection('museum')
 
-    collection = ['bugs', 'fish', 'fossils', 'sea']
+    collection = ['art', 'bugs', 'fish', 'fossils', 'sea']
 
     for specimen in collection:
         user_ref.document(specimen).set({

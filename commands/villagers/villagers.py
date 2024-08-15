@@ -78,7 +78,6 @@ class Villagers(commands.Cog):
                     react, user = await handle_user_selection(self, ctx, confirm, buttons)
                     if not react:
                         return
-
                     else:
                         if react.emoji == buttons[0]:
                             await confirm.delete()

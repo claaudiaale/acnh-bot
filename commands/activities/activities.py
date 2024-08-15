@@ -79,11 +79,11 @@ async def swarm_sting(ctx: discord.ApplicationContext, catch):
         return
 
 
-async def handle_swarm(self, ctx, swarm, buttons, catch):
+async def handle_swarm(self, ctx, swarm, catch, buttons):
     try:
         react, user = await self.bot.wait_for('reaction_add', timeout=5,
                                               check=lambda r, u: r.message.id == swarm.id
-                                                                 and u.id == ctx.author.id and r.emoji in buttons)
+                                              and u.id == ctx.author.id and r.emoji in buttons)
         await swarm.remove_reaction(react.emoji, user)
 
         if catch['name'] == buttons[react.emoji]:
@@ -150,8 +150,8 @@ class Activities(commands.Cog):
                 catch = generate_random_specimen('bugs')
             if catch['name'] in buttons.values():
                 update_profile(str(ctx.author.id), 'swarm_count')
-                swarm = await ctx.send(f'A {catch['name']} is chasing you! '
-                                       f'You have 5 seconds to catch the correct bug!')
+                swarm = await ctx.respond(f'A {catch['name']} is chasing you! '
+                                          f'You have 5 seconds to catch the correct bug!')
                 for emoji, name in buttons.items():
                     await swarm.add_reaction(emoji)
                 await handle_swarm(self, ctx, swarm, catch, buttons)
@@ -267,8 +267,7 @@ class Activities(commands.Cog):
                 catch = {'name': 'wasp'}
                 tool = has_tool(str(ctx.author.id), 'net')
                 if tool:
-                    swarm = await ctx.send(f'A wasp is chasing you! '
-                                           f'You have 5 seconds to catch it!')
+                    swarm = await ctx.respond(f'A wasp is chasing you! You have 5 seconds to catch it!')
                     for emoji, name in buttons.items():
                         await swarm.add_reaction(emoji)
                     await handle_swarm(self, ctx, swarm, catch, buttons)
