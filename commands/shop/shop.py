@@ -6,6 +6,7 @@ from util.activities import fetch_item_info, fetch_clothing_info
 from commands.user.profile import (add_to_inventory, has_item, remove_from_inventory, update_bells, get_user_profile,
                                    has_paintings)
 
+
 def sort_tools(tool):
     tool_order = {'flimsy': 0, 'golden': 2}
     for key in tool_order:
@@ -142,7 +143,7 @@ class Shop(commands.Cog):
         await ctx.defer()
         buttons = ['\u274C', '\u2705']
         if 'painting' in item.strip().lower() or 'statue' in item.strip().lower():
-            if not has_paintings(str(ctx.author.id), item):
+            if not has_paintings(str(ctx.author.id), item, quantity)[1]:
                 donate = discord.Embed(color=0x9dffb0,
                                        description=f'Oops! You have more than 1 kind of these pieces in your '
                                                    f'inventory, it would be best to visit Blathers and identify '

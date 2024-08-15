@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from commands.user.profile import get_museum_info, has_item, add_to_museum, remove_from_inventory
+from commands.user.profile import get_museum_info, has_paintings, add_to_museum, remove_from_inventory
 from util.activities import fetch_species, fetch_fossils
 from util.redd import fetch_all_art
 from util.embed import handle_user_selection
@@ -63,7 +63,7 @@ async def authenticity_check(user_id, artwork):
         message = discord.Embed(color=0x9dffb0,
                                 description=f'Hoo! Upon closer examination, I have grave news to share with you! '
                                             f'This work of art... is a FAKE! I\'m terribly sorry, you\'ll have to find '
-                                            f'some place else to display this. I\'ve heard the Nooklings may even '
+                                            f'some place else to display this. I\'ve heard that the Nooklings may even '
                                             f'take up your offer on it.')
     message.set_author(name='Blathers',
                        icon_url='https://dodo.ac/np/images/1/1b/Blathers_NH.png')
@@ -92,8 +92,8 @@ class Museum(commands.Cog):
     async def donate(self, ctx: discord.ApplicationContext, artwork: str):
         await ctx.defer()
         buttons = ['\u274C', '\u2705']
-        artwork_info = has_item(str(ctx.author.id), artwork.lower(), 1)
-        if not artwork_info[0]:
+        artwork_info = has_paintings(str(ctx.author.id), artwork.lower(), 1)
+        if not artwork_info[0][0]:
             await ctx.respond(f'..Hmm....You don\'t have the **{artwork.title()}** to donate right now...')
             return
         else:
@@ -116,7 +116,8 @@ class Museum(commands.Cog):
                                     await ctx.respond(f'Donate action cancelled.')
                                     return
                                 elif react.emoji == buttons[1]:
-                                    authenticity = await authenticity_check(str(ctx.author.id), artwork_info)
+                                    await confirm.delete()
+                                    authenticity = await authenticity_check(str(ctx.author.id), artwork_info[0])
                                     await ctx.respond(embed=authenticity)
                     else:
                         await ctx.respond(embed=check)

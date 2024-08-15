@@ -154,8 +154,8 @@ def has_tool(user_id, item):
     user_ref = db.collection('users').document(user_id)
     inventory = user_ref.collection('inventory')
     tools = (inventory.where(filter=FieldFilter('remaining_uses', '>', 0))
-                      .order_by('count', direction=firestore.Query.DESCENDING)
-                      .order_by('remaining_uses', direction=firestore.Query.DESCENDING)).get()
+             .order_by('count', direction=firestore.Query.DESCENDING)
+             .order_by('remaining_uses', direction=firestore.Query.DESCENDING)).get()
     for tool in tools:
         if item in tool.get('name').lower():
             update_use = inventory.document(tool.id)
@@ -218,10 +218,16 @@ def add_inventory_stack(user_id, item, quantity):
         inventory_ref.add(item)
 
 
-def has_item(user_id, item, quantity):
+def has_item(user_id, item, quantity, donation=False):
     user_ref = db.collection('users').document(user_id)
     inventory_ref = user_ref.collection('inventory')
-    inv_item = inventory_ref.where(filter=FieldFilter('name', '==', item)).get()
+    if donation:
+        inv_item = (inventory_ref.where(filter=FieldFilter('name', '==', item))
+                    .where(filter=FieldFilter('authenticity', '==', True)).get())
+        print(inv_item)
+    else:
+        inv_item = inventory_ref.where(filter=FieldFilter('name', '==', item)).get()
+        print(inv_item)
 
     if inv_item:
         count = inv_item[0].get('count')
@@ -363,12 +369,15 @@ def generate_art_info(art):
     return information
 
 
-def has_paintings(user_id, artwork):
+def has_paintings(user_id, artwork, quantity):
     user_ref = db.collection('users').document(user_id)
     inventory_ref = user_ref.collection('inventory')
     inv_item = inventory_ref.where(filter=FieldFilter('name', '==', artwork)).get()
 
-    return len(inv_item) == 1
+    if len(inv_item) == 1:
+        return has_item(user_id, artwork, quantity), True
+    elif len(inv_item) > 1:
+        return has_item(user_id, artwork, quantity, donation=True), False
 
 
 class Profile(commands.Cog):
