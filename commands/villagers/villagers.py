@@ -65,10 +65,12 @@ class Villagers(commands.Cog):
         buttons = ['\u274C', '\u2705']
         user_profile = get_user_profile(str(ctx.author.id)).to_dict()
         villagers = user_profile.get('villagers')
+        visitor = user_profile.get('visitor')
         names_and_id = {(get_villager_name(villager_id), villager_id) for villager_id in villagers}
         for name, villager_id in names_and_id:
-            if name.lower() == resident:
-                confirm = await ctx.respond(f'Are you sure you want to kick **{resident.title()}** from your island?')
+            if name.lower() == resident and villager_id != visitor:
+                await ctx.respond(embed=generate_villager_message(resident))
+                confirm = await ctx.send(f'Are you sure you want to kick **{resident.title()}** from your island?')
                 for b in buttons:
                     await confirm.add_reaction(b)
 
@@ -88,7 +90,12 @@ class Villagers(commands.Cog):
                             user_profile_ref.update({'villagers': villagers})
                             await ctx.respond(f'{resident.title()} has been kicked from your island.')
                             return
-        await ctx.respond(f'**{resident.title()}** is not a current resident on your island!')
+            elif name.lower() == resident and villager_id == visitor:
+                await ctx.respond('You cannot kick the campsite visitor you just invited to your island.')
+                return
+        else:
+            await ctx.respond(f'**{resident.title()}** is not a current resident on your island!')
+            return
 
     @commands.slash_command(name='campsite', description='Check your campsite for a visitor')
     async def campsite(self, ctx: discord.ApplicationContext):
