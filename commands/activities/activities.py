@@ -1,5 +1,4 @@
 import asyncio
-
 import discord
 from discord.ext import commands
 import datetime
@@ -80,6 +79,24 @@ async def swarm_sting(ctx: discord.ApplicationContext, catch):
         return
 
 
+async def handle_swarm(self, ctx, swarm, buttons, catch):
+    try:
+        react, user = await self.bot.wait_for('reaction_add', timeout=5,
+                                              check=lambda r, u: r.message.id == swarm.id
+                                                                 and u.id == ctx.author.id and r.emoji in buttons)
+        await swarm.remove_reaction(react.emoji, user)
+
+        if catch['name'] == buttons[react.emoji]:
+            await swarm.delete()
+            await catch_bug(ctx, catch)
+        else:
+            await swarm.delete()
+            await swarm_sting(ctx, catch)
+    except asyncio.TimeoutError:
+        await swarm.delete()
+        await swarm_sting(ctx, catch)
+
+
 class Activities(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -131,28 +148,13 @@ class Activities(commands.Cog):
                 catch = generate_random_specimen('bugs', no_swarm=True)
             else:
                 catch = generate_random_specimen('bugs')
-            if catch['name'] in ['wasp', 'scorpion', 'tarantula']:
+            if catch['name'] in buttons.values():
                 update_profile(str(ctx.author.id), 'swarm_count')
                 swarm = await ctx.send(f'A {catch['name']} is chasing you! '
                                        f'You have 5 seconds to catch the correct bug!')
                 for emoji, name in buttons.items():
                     await swarm.add_reaction(emoji)
-
-                try:
-                    react, user = await self.bot.wait_for('reaction_add', timeout=5,
-                                                          check=lambda r, u: r.message.id == swarm.id
-                                                          and u.id == ctx.author.id and r.emoji in buttons)
-                    await swarm.remove_reaction(react.emoji, user)
-
-                    if catch['name'] == buttons[react.emoji]:
-                        await swarm.delete()
-                        await catch_bug(ctx, catch)
-                    else:
-                        await swarm.delete()
-                        await swarm_sting(ctx, catch)
-                except asyncio.TimeoutError:
-                    await swarm.delete()
-                    await swarm_sting(ctx, catch)
+                await handle_swarm(self, ctx, swarm, catch, buttons)
             else:
                 await catch_bug(ctx, catch)
         else:
@@ -269,21 +271,7 @@ class Activities(commands.Cog):
                                            f'You have 5 seconds to catch it!')
                     for emoji, name in buttons.items():
                         await swarm.add_reaction(emoji)
-                    try:
-                        react, user = await self.bot.wait_for('reaction_add', timeout=5,
-                                                              check=lambda r, u: r.message.id == swarm.id
-                                                              and u.id == ctx.author.id and r.emoji in buttons)
-                        await swarm.remove_reaction(react.emoji, user)
-
-                        if catch['name'] == buttons[react.emoji]:
-                            await swarm.delete()
-                            await catch_bug(ctx, catch)
-                        else:
-                            await swarm.delete()
-                            await swarm_sting(ctx, catch)
-                    except asyncio.TimeoutError:
-                        await swarm.delete()
-                        await swarm_sting(ctx, catch)
+                    await handle_swarm(self, ctx, swarm, catch, buttons)
                 else:
                     await ctx.respond(f'You don\'t have a net to catch a wasp!')
                     await swarm_sting(ctx, catch)

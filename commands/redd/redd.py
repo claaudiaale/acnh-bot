@@ -1,11 +1,10 @@
 import discord
 from discord.ext import commands
-import asyncio
 import string
 import datetime
 from commands.user.profile import generate_random_art, get_user_profile, add_to_inventory, update_bells
 from util.redd import fetch_one_art
-from util.embed import embed_arrows
+from util.embed import embed_arrows, handle_user_selection
 
 
 def generate_art_message(art_info):
@@ -91,14 +90,9 @@ class Redd(commands.Cog):
             await confirmation.add_reaction(b)
 
         while True:
-            try:
-                react, user = await self.bot.wait_for(
-                    'reaction_add', timeout=60,
-                    check=lambda r, u: r.message.id == confirmation.id
-                    and u.id == ctx.author.id and r.emoji in buttons)
-                await confirmation.remove_reaction(react.emoji, user)
-            except asyncio.TimeoutError:
-                return await confirmation.delete()
+            react, user = await handle_user_selection(self, ctx, confirmation, buttons)
+            if not react:
+                return
 
             else:
                 if react.emoji == buttons[0]:

@@ -22,9 +22,14 @@ def create_user_profile(user_id):
         'fruit': random.choice(['apple', 'cherry', 'orange', 'peach', 'pear'])
     })
 
+    add_tools(user_ref)
     add_museum(user_id)
     add_limits(user_id)
 
+    return user_ref.get()
+
+
+def add_tools(user_ref):
     inventory = user_ref.collection('inventory')
     new_tools = ['flimsy_shovel', 'flimsy_fishing_rod', 'flimsy_net']
     information = [fetch_tools(tools) for tools in new_tools]
@@ -39,13 +44,11 @@ def create_user_profile(user_id):
     for tool in new_user_tools:
         inventory.add(tool)
 
-    return user_ref.get()
-
 
 def add_museum(user_id):
     user_ref = db.collection('users').document(user_id).collection('museum')
 
-    collection = ['bugs', 'fish', 'fossils']
+    collection = ['bugs', 'fish', 'fossils', 'sea']
 
     for specimen in collection:
         user_ref.document(specimen).set({

@@ -1,10 +1,9 @@
 import discord
 from discord.ext import commands
 from util.tools import fetch_all_tools, fetch_tools
-from util.embed import embed_arrows
+from util.embed import embed_arrows, handle_user_selection
 from util.activities import fetch_item_info, fetch_clothing_info
 from commands.user.profile import add_to_inventory, has_item, remove_from_inventory, update_bells, get_user_profile
-import asyncio
 
 
 def sort_tools(tool):
@@ -90,13 +89,9 @@ class Shop(commands.Cog):
             await confirmation.add_reaction(b)
 
         while True:
-            try:
-                react, user = await self.bot.wait_for(
-                    'reaction_add', timeout=60,
-                    check=lambda r, u: r.message.id == confirmation.id and u.id == ctx.author.id and r.emoji in buttons)
-                await confirmation.remove_reaction(react.emoji, user)
-            except asyncio.TimeoutError:
-                return await confirmation.delete()
+            react, user = await handle_user_selection(self, ctx, confirmation, buttons)
+            if not react:
+                return
 
             else:
                 if react.emoji == buttons[0]:
@@ -141,13 +136,9 @@ class Shop(commands.Cog):
                 await message.add_reaction(b)
 
             while True:
-                try:
-                    react, user = await self.bot.wait_for('reaction_add', timeout=60,
-                                                          check=lambda r, u: r.message.id == message.id
-                                                          and u.id == ctx.author.id and r.emoji in buttons)
-                    await message.remove_reaction(react.emoji, user)
-                except asyncio.TimeoutError:
-                    return await message.delete()
+                react, user = await handle_user_selection(self, ctx, confirmation, buttons)
+                if not react:
+                    return
 
                 else:
                     if react.emoji == buttons[0]:

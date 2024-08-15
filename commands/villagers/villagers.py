@@ -2,8 +2,8 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 from views.database import db
-import asyncio
 from util.villagers import get_villager_info, get_villager_name
+from util.embed import embed_arrows, handle_user_selection
 from commands.user.profile import get_user_profile, generate_random_villager
 
 load_dotenv()
@@ -50,7 +50,6 @@ class Villagers(commands.Cog):
     @commands.slash_command(name='residents', description='View all current island residents')
     async def residents(self, ctx: discord.ApplicationContext):
         await ctx.defer()
-        buttons = ['\u2B05', '\u27A1']
         user_profile = get_user_profile(str(ctx.author.id))
         residents = [(generate_villager_message(resident)) for resident in user_profile.get('villagers')]
 
@@ -58,29 +57,7 @@ class Villagers(commands.Cog):
             await ctx.respond(f'You currently have no residents on your island.')
             return
 
-        current_page = 0
-        message = await ctx.respond(embed=residents[current_page])
-        for b in buttons:
-            await message.add_reaction(b)
-
-        while True:
-            try:
-                react, user = await self.bot.wait_for('reaction_add', timeout=60, check=lambda r, u: r.message.id ==
-                                                      message.id and u.id == ctx.author.id and r.emoji in buttons)
-                await message.remove_reaction(react.emoji, user)
-            except asyncio.TimeoutError:
-                return await message.clear_reactions()
-
-            else:
-                if react.emoji == buttons[0] and current_page > 0:
-                    current_page -= 1
-                elif react.emoji == buttons[1] and current_page < len(residents) - 1:
-                    current_page += 1
-
-                embed = residents[current_page]
-                embed.set_footer(text=f'Page {current_page + 1} of {len(residents)}',
-                                 icon_url='https://dodo.ac/np/images/5/52/NH_Logo_English.png')
-                await message.edit(embed=embed)
+        await embed_arrows(self, ctx, residents)
 
     @commands.slash_command(name='kick', description='Kick a resident from your island')
     async def kick(self, ctx: discord.ApplicationContext, resident: str):
@@ -96,13 +73,9 @@ class Villagers(commands.Cog):
                     await confirm.add_reaction(b)
 
                 while True:
-                    try:
-                        react, user = await self.bot.wait_for(
-                            'reaction_add', timeout=60, check=lambda r, u: r.message.id ==
-                            confirm.id and u.id == ctx.author.id and r.emoji in buttons)
-                        await confirm.remove_reaction(react.emoji, user)
-                    except asyncio.TimeoutError:
-                        return await confirm.delete()
+                    react, user = await handle_user_selection(self, ctx, confirm, buttons)
+                    if not react:
+                        return
 
                     else:
                         if react.emoji == buttons[0]:
@@ -138,13 +111,9 @@ class Villagers(commands.Cog):
                 await invitation.add_reaction(b)
 
             while True:
-                try:
-                    react, user = await self.bot.wait_for(
-                        'reaction_add', timeout=60, check=lambda r, u: r.message.id ==
-                        invitation.id and u.id == ctx.author.id and r.emoji in buttons)
-                    await invitation.remove_reaction(react.emoji, user)
-                except asyncio.TimeoutError:
-                    return await invitation.delete()
+                react, user = await handle_user_selection(self, ctx, invitation, buttons)
+                if not react:
+                    return
 
                 else:
                     if react.emoji == buttons[0]:
