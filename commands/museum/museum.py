@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from commands.user.profile import get_museum_info, has_paintings, add_to_museum, remove_from_inventory
 from util.activities import fetch_species, fetch_fossils
-from util.redd import fetch_all_art
+from util.redd import fetch_one_art
 from util.embed import handle_user_selection
 
 
@@ -93,35 +93,31 @@ class Museum(commands.Cog):
         await ctx.defer()
         buttons = ['\u274C', '\u2705']
         artwork_info = has_paintings(str(ctx.author.id), artwork.lower(), 1)
-        if not artwork_info[0][0]:
+        if not artwork_info:
             await ctx.respond(f'..Hmm....You don\'t have the **{artwork.title()}** to donate right now...')
             return
-        else:
-            all_art = fetch_all_art()
-            for art in all_art:
-                if art['name'].lower() == artwork.lower().strip():
-                    check = await museum_check(ctx, artwork)
-                    if isinstance(check, bool):
-                        confirm = await ctx.send(f'Are you sure you want to donate the **{artwork.title()}**?')
-                        for b in buttons:
-                            await confirm.add_reaction(b)
+        try:
+            fetch_one_art(artwork.lower().strip())
+            check = await museum_check(ctx, artwork)
+            if isinstance(check, bool):
+                confirm = await ctx.send(f'Are you sure you want to donate the **{artwork.title()}**?')
+                for b in buttons:
+                    await confirm.add_reaction(b)
 
-                        while True:
-                            react, user = await handle_user_selection(self, ctx, confirm, buttons)
-                            if not react:
-                                return
-                            else:
-                                if react.emoji == buttons[0]:
-                                    await confirm.delete()
-                                    await ctx.respond(f'Donate action cancelled.')
-                                    return
-                                elif react.emoji == buttons[1]:
-                                    await confirm.delete()
-                                    authenticity = await authenticity_check(str(ctx.author.id), artwork_info[0])
-                                    await ctx.respond(embed=authenticity)
-                    else:
-                        await ctx.respond(embed=check)
+                react, user = await handle_user_selection(self, ctx, confirm, buttons)
+                if react:
+                    if react.emoji == buttons[0]:
+                        await confirm.delete()
+                        await ctx.respond(f'Donate action cancelled.')
+                        return
+                    elif react.emoji == buttons[1]:
+                        await confirm.delete()
+                        authenticity = await authenticity_check(str(ctx.author.id), artwork_info[0])
+                        await ctx.respond(embed=authenticity)
             else:
+                await ctx.respond(embed=check)
+        except Exception as e:
+            if '404' in str(e):
                 message = discord.Embed(color=0x9dffb0,
                                         description=f'Oops! Museum space is limited... there is no room for that '
                                                     f'piece right now.')
