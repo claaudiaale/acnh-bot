@@ -113,6 +113,27 @@ class Redd(commands.Cog):
                     if add:
                         await ctx.send(add)
 
+    @commands.slash_command(name='artworkinfo', description='Show information about a piece of art')
+    async def artworkinfo(self, ctx: discord.ApplicationContext, artwork: str):
+        await ctx.defer()
+        try:
+            artwork_info = fetch_one_art(artwork.lower().strip().replace(' ', '_'))
+            if artwork_info['art_type'] == 'Painting':
+                artwork_info['url'] = artwork_info['texture_url']
+            elif artwork_info['art_type'] == 'Statue':
+                artwork_info['url'] = artwork_info['image_url']
+
+            message = generate_art_message(artwork_info)
+            await ctx.respond(embed=message)
+        except Exception as e:
+            if '404' in str(e):
+                message = discord.Embed(color=0x9dffb0,
+                                        description=f'Hmm...I can\'t find any information on that piece at the '
+                                                    f'moment...')
+                message.set_author(name='Blathers',
+                                   icon_url='https://dodo.ac/np/images/1/1b/Blathers_NH.png')
+                await ctx.respond(embed=message)
+
 
 def setup(bot):
     bot.add_cog(Redd(bot))
