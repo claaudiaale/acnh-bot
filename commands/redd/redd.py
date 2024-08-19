@@ -39,9 +39,8 @@ async def check_for_redd():
 
 
 async def get_artwork(current_shop, artwork):
-    artwork_name = artwork.lower()
     for art in current_shop:
-        if artwork_name == art['name'].lower():
+        if artwork == art['name'].lower():
             return art
     return None
 
@@ -69,6 +68,7 @@ class Redd(commands.Cog):
     @commands.slash_command(name='buyredd', description='Buy artwork from Redd')
     async def buyredd(self, ctx: discord.ApplicationContext, quantity: int, artwork: str):
         await ctx.defer()
+        art = artwork.lower().strip()
         buttons = ['\u274C', '\u2705']
 
         if not await check_for_redd():
@@ -78,40 +78,36 @@ class Redd(commands.Cog):
         user_profile = get_user_profile(str(ctx.author.id))
         current_shop = user_profile.get('artwork')
 
-        can_buy = await get_artwork(current_shop, artwork)
+        can_buy = await get_artwork(current_shop, art)
         if not can_buy:
             await ctx.respond('This piece of art is currently not available in shop.')
             return
 
         await ctx.respond(embed=generate_art_message(can_buy))
-        confirmation = await ctx.send(f'Buy **{quantity}x {artwork.title()}** for '
+        confirmation = await ctx.send(f'Buy **{quantity}x {art.title()}** for '
                                       f'{4980 * quantity} Bells?')
         for b in buttons:
             await confirmation.add_reaction(b)
 
-        while True:
-            react, user = await handle_user_selection(self, ctx, confirmation, buttons)
-            if not react:
+        react, user = await handle_user_selection(self, ctx, confirmation, buttons)
+        if react:
+            if react.emoji == buttons[0]:
+                await confirmation.delete()
+                await ctx.send(f'Buy action cancelled.')
                 return
+            elif react.emoji == buttons[1]:
+                add = add_to_inventory(str(ctx.author.id), can_buy, quantity)
+                update_bells(str(ctx.author.id), (4980 * quantity), buy=True)
 
-            else:
-                if react.emoji == buttons[0]:
-                    await confirmation.delete()
-                    await ctx.send(f'Buy action cancelled.')
-                    return
-                elif react.emoji == buttons[1]:
-                    add = add_to_inventory(str(ctx.author.id), can_buy, quantity)
-                    update_bells(str(ctx.author.id), (4980 * quantity), buy=True)
-
-                    message = discord.Embed(color=0x9dffb0,
-                                            description=f'You just bought **{quantity}x '
-                                                        f'{artwork.title()}**. '
-                                                        f'Thanks for visiting, come back again soon!')
-                    message.set_author(name='Redd',
-                                       icon_url='https://dodo.ac/np/images/f/f3/Redd_NL.png')
-                    await ctx.send(embed=message)
-                    if add:
-                        await ctx.send(add)
+                message = discord.Embed(color=0x9dffb0,
+                                        description=f'You just bought **{quantity}x '
+                                                    f'{art.title()}**. '
+                                                    f'Thanks for visiting, come back again soon!')
+                message.set_author(name='Redd',
+                                   icon_url='https://dodo.ac/np/images/f/f3/Redd_NL.png')
+                await ctx.send(embed=message)
+                if add:
+                    await ctx.send(add)
 
     @commands.slash_command(name='artworkinfo', description='Show information about a piece of art')
     async def artworkinfo(self, ctx: discord.ApplicationContext, artwork: str):

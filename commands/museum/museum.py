@@ -91,16 +91,17 @@ class Museum(commands.Cog):
     @commands.slash_command(name='donate', description='Donate artwork to your museum')
     async def donate(self, ctx: discord.ApplicationContext, artwork: str):
         await ctx.defer()
+        art = artwork.lower().strip()
         buttons = ['\u274C', '\u2705']
-        artwork_info = has_paintings(str(ctx.author.id), artwork.lower(), 1)
+        artwork_info = has_paintings(str(ctx.author.id), art, 1)
         if not artwork_info:
-            await ctx.respond(f'..Hmm....You don\'t have the **{artwork.title()}** to donate right now...')
+            await ctx.respond(f'..Hmm....You don\'t have the **{art.title()}** to donate right now...')
             return
         try:
-            fetch_one_art(artwork.lower().strip())
-            check = await museum_check(ctx, artwork)
+            fetch_one_art(art)
+            check = await museum_check(ctx, art)
             if isinstance(check, bool):
-                confirm = await ctx.send(f'Are you sure you want to donate the **{artwork.title()}**?')
+                confirm = await ctx.send(f'Are you sure you want to donate the **{art.title()}**?')
                 for b in buttons:
                     await confirm.add_reaction(b)
 

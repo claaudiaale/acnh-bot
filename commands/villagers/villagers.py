@@ -123,28 +123,24 @@ class Villagers(commands.Cog):
             for b in buttons:
                 await invitation.add_reaction(b)
 
-            while True:
-                react, user = await handle_user_selection(self, ctx, invitation, buttons)
-                if not react:
+            react, user = await handle_user_selection(self, ctx, invitation, buttons)
+            if react:
+                if react.emoji == buttons[0]:
+                    await invitation.delete()
+                    await ctx.send(f'Invitation action cancelled.')
                     return
-
-                else:
-                    if react.emoji == buttons[0]:
+                elif react.emoji == buttons[1]:
+                    if len(villagers) > 9:
+                        await ctx.respond(f'There\'s not enough room on your island! Kick a current resident out '
+                                          f'using `/kick` to invite **{villager_info['name'].title()}** to your '
+                                          f'island.')
+                    else:
+                        villagers.append(visitor_id)
+                        user_profile_ref = db.collection('users').document(str(ctx.author.id))
+                        user_profile_ref.update({'villagers': villagers})
                         await invitation.delete()
-                        await ctx.send(f'Invitation action cancelled.')
+                        await ctx.send(f'**{villager_info['name'].title()}** is now a resident on your island!')
                         return
-                    elif react.emoji == buttons[1]:
-                        if len(villagers) > 9:
-                            await ctx.respond(f'There\'s not enough room on your island! Kick a current resident out '
-                                              f'using `/kick` to invite **{villager_info['name'].title()}** to your '
-                                              f'island.')
-                        else:
-                            villagers.append(visitor_id)
-                            user_profile_ref = db.collection('users').document(str(ctx.author.id))
-                            user_profile_ref.update({'villagers': villagers})
-                            await invitation.delete()
-                            await ctx.send(f'**{villager_info['name'].title()}** is now a resident on your island!')
-                            return
 
 
 def setup(bot):

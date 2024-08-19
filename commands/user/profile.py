@@ -62,7 +62,7 @@ def add_limits(user_id):
         'campsite': False,
         'daily_command': False,
         'fossil_count': 0,
-        'fruit_count': 0,
+        'shake_count': 0,
         'swarm_count': 0,
         'last_reset': '',
         'redd': False
@@ -99,7 +99,7 @@ def update_profile(user_id, command):
 
     last_reset = limits.get('last_reset', '')
     check = limits.get(command)
-    if command in ['fossil_count', 'fruit_count', 'swarm_count']:
+    if command in ['fossil_count', 'shake_count', 'swarm_count']:
         if last_reset != today or check < 5:
             if last_reset != today:
                 reset_data(user_id, command)

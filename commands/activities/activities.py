@@ -262,7 +262,6 @@ class Activities(commands.Cog):
             shake_chances.extend(['wasp', 'bells'])
 
             shake = random.choice(shake_chances)
-
             if shake == 'wasp':
                 catch = {'name': 'wasp'}
                 tool = has_tool(str(ctx.author.id), 'net')
@@ -291,8 +290,9 @@ class Activities(commands.Cog):
             await ctx.respond(f'Please wait **{round(error.retry_after)} seconds** to find another tree to shake.')
 
     @commands.slash_command(name='eat', description='Eat fruits to gain health points back')
-    async def eat(self, ctx: discord.ApplicationContext, quantity: int, fruit_name: str):
+    async def eat(self, ctx: discord.ApplicationContext, quantity: int, fruit: str):
         await ctx.defer()
+        fruit_name = fruit.lower().strip()
         fruits = ['apple', 'cherry', 'orange', 'peach', 'pear']
         if fruit_name in fruits:
             item_info = has_item(str(ctx.author.id), fruit_name, quantity)
