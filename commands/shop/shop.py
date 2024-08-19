@@ -92,35 +92,42 @@ class Shop(commands.Cog):
     @commands.slash_command(name='buy', description='Buy items from Nook\'s Cranny')
     async def buy(self, ctx: discord.ApplicationContext, quantity: int, item: str):
         buttons = ['\u274C', '\u2705']
-        if item == 'snorkel mask':
-            item_info = fetch_clothing_info('snorkel_mask')
-        else:
-            item_info = fetch_tools(item.replace(' ', '_'))
-        price_info = item_info.get('price', [])
-
-        if len(price_info) > 0:
-            price_info = item_info.get('price')[0]
-            cost = price_info.get('price')
-            confirmation = await ctx.send(f'Buy **{quantity}x {item.title()}** for {cost * quantity} Bells?')
-        else:
-            confirmation = await ctx.send(f'Buy **{quantity}x {item.title()}** for {(item_info.get('sell')*4) *
-                                                                                    quantity} Bells?')
-        for b in buttons:
-            await confirmation.add_reaction(b)
-
-        while True:
-            react, user = await handle_user_selection(self, ctx, confirmation, buttons)
-            if not react:
-                return
-
+        try:
+            if item == 'snorkel mask':
+                item_info = fetch_clothing_info('snorkel_mask')
             else:
+                item_info = fetch_tools(item.replace(' ', '_'))
+        except Exception as e:
+            if '404' in str(e):
+                message = discord.Embed(color=0x9dffb0,
+                                        description=f'Hmm...I don\'t think we have this item in our shop to sell at '
+                                                    f'the moment...')
+                message.set_author(name='Timmy and Tommy',
+                                   icon_url='https://play.nintendo.com/'
+                                            'images/masthead-img-timmy-tommy.f4b49fb7.cf659c6f.png')
+                await ctx.respond(embed=message)
+        else:
+            price_info = item_info.get('price', [])
+
+            if len(price_info) > 0:
+                price_info = item_info.get('price')[0]
+                cost = price_info.get('price')
+                confirmation = await ctx.send(f'Buy **{quantity}x {item.title()}** for {cost * quantity} Bells?')
+            else:
+                confirmation = await ctx.send(f'Buy **{quantity}x {item.title()}** for {(item_info.get('sell') * 4) *
+                                                                                        quantity} Bells?')
+            for b in buttons:
+                await confirmation.add_reaction(b)
+
+            react, user = await handle_user_selection(self, ctx, confirmation, buttons)
+            if react:
                 if react.emoji == buttons[0]:
                     await confirmation.delete()
                     await ctx.send(f'Buy action cancelled.')
                     return
                 elif react.emoji == buttons[1]:
                     price = item_info.get('price')[0].get('price') \
-                        if item_info.get('price') else item_info.get('sell')*4
+                        if item_info.get('price') else item_info.get('sell') * 4
                     add = add_to_inventory(str(ctx.author.id), {'name': item_info.get('name'),
                                                                 'remaining_uses': item_info.get('uses'),
                                                                 'original_uses': item_info.get('uses'),
