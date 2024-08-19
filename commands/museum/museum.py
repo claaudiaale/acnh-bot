@@ -7,7 +7,7 @@ from util.embed import handle_user_selection
 
 
 async def generate_museum_message(ctx):
-    specimen_types = ['bugs', 'fish', 'fossils', 'sea']
+    specimen_types = ['bugs', 'fish', 'fossils', 'sea', 'art']
     message = discord.Embed(title=f'{ctx.author.name.title()}\'s Museum',
                             color=0x9dffb0)
     message.set_thumbnail(url=ctx.author.avatar.url)

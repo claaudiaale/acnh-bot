@@ -19,23 +19,27 @@ async def intro(ctx: discord.ApplicationContext):
                             f'your campsite so you can find new villagers and invite them to your island! If you have '
                             f'10 island residents and you\'d like to invite a new villager, you will need to kick '
                             f'one of your current residents out using `/kick`. Use `/residents` to view your '
-                            f'current villagers. The campsite will refresh everyday at 0:00 PST.',
+                            f'current villagers and use `/villagerinfo` to get information about any villager. '
+                            f'The campsite will refresh everyday at 0:00 PST.',
                       inline=True)
     message.add_field(name='\u200b',
                       value='\u200b',
                       inline=True)
     message.add_field(name='Digging, Fishing, Mining, and more!',
                       value=f'You\'ll begin with a flimsy fishing rod, shovel, and net. Use `/dig` to dig for '
-                            f'fossils, use `/fish` to fish, and use `/bug` to catch bugs. New specimens will be '
-                            f'automatically donated to your museum. You\'ll be able to sell extra specimens to '
-                            f'Timmy and Tommy for bells. To view your current progress for your museum, use '
-                            f'`/museum`.',
+                            f'fossils, use `/fish` to fish, and use `/bug` to catch bugs. You\'ll need to buy a '
+                            f'snorkel mask from Nook\'s Cranny before using `/dive` to dive for sea creatures. New '
+                            f'specimens will be automatically donated to your museum. You\'ll be able to sell extra '
+                            f'specimens to Timmy and Tommy for bells. To view your current progress for your museum, '
+                            f'use `/museum`.',
                       inline=True)
-    message.add_field(name='Surviving',
-                      value='Be careful when encountering bugs! You have 3 health points, being stung by a scorpion, '
-                            'bee, or tarantula will cause you to lose 1 health point. Use `/eat` to eat one of your '
-                            'native fruits to gain 1 health point or eat any other fruit to gain 3 health points. '
-                            'Draining all your health causes you to pass out and lose all your inventory items.',
+    message.add_field(name='Artwork',
+                      value='Redd will visit your island every Sunday. Use `/shopredd` to view what he\'s currently '
+                            'selling and `/buyredd` to purchase items from him. Use `/donate` to donate pieces to '
+                            'your museum. Be careful about what pieces you decide to buy, counterfeit artwork cannot '
+                            'be donated to the museum! The command `/artworkinfo` will return information about '
+                            'any piece, but it\'s up to you to compare authentic images of artwork to what Redd has '
+                            'in shop.',
                       inline=True)
     message.add_field(name='\u200b',
                       value='\u200b',
@@ -55,6 +59,12 @@ async def intro(ctx: discord.ApplicationContext):
     message.add_field(name='Daily',
                       value=f'You will start off with 100,000 bells. The command `/daily` will refresh everyday at '
                             f'0:00 PST for you to receive 10,000 free bells.',
+                      inline=True)
+    message.add_field(name='Surviving',
+                      value='Be careful when encountering bugs! You have 5 health points, being stung by a scorpion, '
+                            'bee, or tarantula will cause you to lose 1 health point. Use `/eat` to eat one of your '
+                            'native fruits to gain 1 health point or eat any other fruit to gain 3 health points. '
+                            'Draining all your health causes you to pass out and lose all your inventory items.',
                       inline=True)
     await ctx.respond(embed=message)
 

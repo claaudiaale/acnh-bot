@@ -369,9 +369,13 @@ def generate_art_info(art):
             thumbnail = art_info['fake_image_url']
             information['authenticity'] = False
 
-    information['name'] = art_info['name']
-    information['url'] = thumbnail
-    information['sell'] = 1245
+    information = {
+        'name': art_info['name'],
+        'url': thumbnail,
+        'sell': 1245,
+        'authenticity': information.get('authenticity'),
+        'purchased': False
+    }
 
     return information
 
@@ -385,6 +389,17 @@ def has_paintings(user_id, artwork, quantity):
         return has_item(user_id, artwork, quantity), True
     elif len(inv_item) > 1:
         return has_item(user_id, artwork, quantity, donation=True), False
+
+
+def update_purchased_art(user_id, artwork):
+    user_profile = get_user_profile(user_id).to_dict()
+    artwork_list = user_profile['artwork']
+    for art in artwork_list:
+        if art.get('name').lower() == artwork:
+            art['purchased'] = True
+            user_ref = db.collection('users').document(user_id)
+            user_ref.update({'artwork': artwork_list})
+            return
 
 
 class Profile(commands.Cog):

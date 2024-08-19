@@ -2,7 +2,8 @@ import discord
 from discord.ext import commands
 import string
 import datetime
-from commands.user.profile import generate_random_art, get_user_profile, add_to_inventory, update_bells
+from commands.user.profile import (generate_random_art, get_user_profile, add_to_inventory, update_bells,
+                                   update_purchased_art)
 from util.redd import fetch_one_art
 from util.embed import embed_arrows, handle_user_selection
 
@@ -35,13 +36,21 @@ def generate_art_message(art_info):
 
 async def check_for_redd():
     day = datetime.datetime.now().strftime('%A')
-    return day == 'Sunday'
+    return day == 'Monday'
 
 
 async def get_artwork(current_shop, artwork):
     for art in current_shop:
         if artwork == art['name'].lower():
-            return art
+            if not art['purchased']:
+                return art
+            elif art['purchased']:
+                message = discord.Embed(color=0x9dffb0,
+                                        description=f'My art is one of a kind, you\'ve already purchased this piece. '
+                                                    f'I\'ll be back next week with new pieces!')
+                message.set_author(name='Redd',
+                                   icon_url='https://dodo.ac/np/images/f/f3/Redd_NL.png')
+                return message
     return None
 
 
@@ -66,7 +75,7 @@ class Redd(commands.Cog):
         await embed_arrows(self, ctx, pages)
 
     @commands.slash_command(name='buyredd', description='Buy artwork from Redd')
-    async def buyredd(self, ctx: discord.ApplicationContext, quantity: int, artwork: str):
+    async def buyredd(self, ctx: discord.ApplicationContext, artwork: str):
         await ctx.defer()
         art = artwork.lower().strip()
         buttons = ['\u274C', '\u2705']
@@ -82,32 +91,34 @@ class Redd(commands.Cog):
         if not can_buy:
             await ctx.respond('This piece of art is currently not available in shop.')
             return
+        elif isinstance(can_buy, dict):
+            await ctx.respond(embed=generate_art_message(can_buy))
+            confirmation = await ctx.send(f'Buy **{art.title()}** for '
+                                          f'4980 Bells?')
+            for b in buttons:
+                await confirmation.add_reaction(b)
 
-        await ctx.respond(embed=generate_art_message(can_buy))
-        confirmation = await ctx.send(f'Buy **{quantity}x {art.title()}** for '
-                                      f'{4980 * quantity} Bells?')
-        for b in buttons:
-            await confirmation.add_reaction(b)
+            react, user = await handle_user_selection(self, ctx, confirmation, buttons)
+            if react:
+                if react.emoji == buttons[0]:
+                    await confirmation.delete()
+                    await ctx.send(f'Buy action cancelled.')
+                    return
+                elif react.emoji == buttons[1]:
+                    add = add_to_inventory(str(ctx.author.id), can_buy, 1)
+                    update_bells(str(ctx.author.id), 4980, buy=True)
+                    update_purchased_art(str(ctx.author.id), art)
 
-        react, user = await handle_user_selection(self, ctx, confirmation, buttons)
-        if react:
-            if react.emoji == buttons[0]:
-                await confirmation.delete()
-                await ctx.send(f'Buy action cancelled.')
-                return
-            elif react.emoji == buttons[1]:
-                add = add_to_inventory(str(ctx.author.id), can_buy, quantity)
-                update_bells(str(ctx.author.id), (4980 * quantity), buy=True)
-
-                message = discord.Embed(color=0x9dffb0,
-                                        description=f'You just bought **{quantity}x '
-                                                    f'{art.title()}**. '
-                                                    f'Thanks for visiting, come back again soon!')
-                message.set_author(name='Redd',
-                                   icon_url='https://dodo.ac/np/images/f/f3/Redd_NL.png')
-                await ctx.send(embed=message)
-                if add:
-                    await ctx.send(add)
+                    message = discord.Embed(color=0x9dffb0,
+                                            description=f'You just bought **{art.title()}**. '
+                                                        f'Thanks for visiting, come back again soon!')
+                    message.set_author(name='Redd',
+                                       icon_url='https://dodo.ac/np/images/f/f3/Redd_NL.png')
+                    await ctx.send(embed=message)
+                    if add:
+                        await ctx.send(add)
+        else:
+            await ctx.respond(embed=can_buy)
 
     @commands.slash_command(name='artworkinfo', description='Show information about a piece of art')
     async def artworkinfo(self, ctx: discord.ApplicationContext, artwork: str):
