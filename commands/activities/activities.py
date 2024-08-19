@@ -298,15 +298,19 @@ class Activities(commands.Cog):
             item_info = has_item(str(ctx.author.id), fruit_name, quantity)
             if item_info[0]:
                 user_profile = get_user_profile(str(ctx.author.id))
-                native_fruit = user_profile.get('fruit')
-                if fruit_name == native_fruit:
-                    update_health(str(ctx.author.id), 1, True)
+                current_health = user_profile.get('health')
+                if current_health == 5:
+                    await ctx.respond(f'You\'re at max health, perhaps we can save this fruit for later!')
                 else:
-                    update_health(str(ctx.author.id), quantity * 3, True)
-                remove_from_inventory(str(ctx.author.id), item_info[1], quantity)
-                updated_profile = get_user_profile(str(ctx.author.id))
-                health = updated_profile.get('health')
-                await ctx.respond(f'You ate **{quantity}x {fruit_name.title()}**. **Current Health: {health}**')
+                    native_fruit = user_profile.get('fruit')
+                    if fruit_name == native_fruit:
+                        update_health(str(ctx.author.id), 1, True)
+                    else:
+                        update_health(str(ctx.author.id), quantity * 3, True)
+                    remove_from_inventory(str(ctx.author.id), item_info[1], quantity)
+                    updated_profile = get_user_profile(str(ctx.author.id))
+                    health = updated_profile.get('health')
+                    await ctx.respond(f'You ate **{quantity}x {fruit_name.title()}**. **Current Health: {health}**')
             else:
                 await ctx.respond(f'..Hmm....You don\'t have **{quantity}x {fruit_name.title()}** to eat right now...')
         else:

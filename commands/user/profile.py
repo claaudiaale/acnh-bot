@@ -270,6 +270,7 @@ def update_bells(user_id, bells, buy=False):
 
 
 def update_health(user_id, quantity, add=False):
+    max_health = 5
     user_ref = db.collection('users').document(user_id)
     if add:
         user_ref.update({
@@ -280,20 +281,26 @@ def update_health(user_id, quantity, add=False):
             'health': firestore.Increment(-quantity)
         })
 
-        updated_profile = user_ref.get()
-        if updated_profile.get('health') == 0:
-            user_ref.update({
-                'health': 5
-            })
-            user_inventory = user_ref.collection('inventory')
-            inventory = user_inventory.stream()
-            for inv in inventory:
-                inv.reference.delete()
+    updated_profile = user_ref.get()
+    updated_health = updated_profile.get('health')
+    if updated_health == 0:
+        user_ref.update({
+            'health': max_health
+        })
+        user_inventory = user_ref.collection('inventory')
+        inventory = user_inventory.stream()
+        for inv in inventory:
+            inv.reference.delete()
 
-            return (f'You lost all your health points and passed out. All items from your inventory were dropped, '
-                    f'visit Nook\'s Cranny to repurchase tools!')
-        else:
-            return False
+        return (f'You lost all your health points and passed out. All items from your inventory were dropped, '
+                f'visit Nook\'s Cranny to repurchase tools!')
+    elif updated_health >= max_health:
+        user_ref.update({
+            'health': max_health
+        })
+        return False
+    else:
+        return False
 
 
 def add_to_museum(user_id, specimen_type, specimen_name):
