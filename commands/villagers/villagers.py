@@ -10,31 +10,35 @@ load_dotenv()
 
 
 def generate_villager_message(identifier):
-    villager_info = get_villager_info(identifier)
-    villager_colour = villager_info['title_color']
-    message = discord.Embed(title=f'{villager_info['name']}',
-                            color=int(villager_colour, 16),
-                            description=f'{villager_info['quote']}')
-    message.set_thumbnail(url=f'{villager_info['image_url']}')
-    message.add_field(name='Species',
-                      value=f'{villager_info['species']}',
-                      inline=True)
-    message.add_field(name='Personality',
-                      value=f'{villager_info['personality']}',
-                      inline=True)
-    message.add_field(name='Gender',
-                      value=f'{villager_info['gender']}',
-                      inline=True)
-    message.add_field(name='Sign',
-                      value=f'{villager_info['sign']}',
-                      inline=True)
-    message.add_field(name='Birthday',
-                      value=f'{villager_info['birthday_month'] + ' '
-                               + villager_info['birthday_day']}',
-                      inline=True)
-    message.add_field(name='Catchphrase',
-                      value=f'{villager_info['phrase']}',
-                      inline=True)
+    try:
+        villager_info = get_villager_info(identifier)
+    except IndexError:
+        message = f'Oops! This villager does not exist.'
+    else:
+        villager_colour = villager_info['title_color']
+        message = discord.Embed(title=f'{villager_info['name']}',
+                                color=int(villager_colour, 16),
+                                description=f'{villager_info['quote']}')
+        message.set_thumbnail(url=f'{villager_info['image_url']}')
+        message.add_field(name='Species',
+                          value=f'{villager_info['species']}',
+                          inline=True)
+        message.add_field(name='Personality',
+                          value=f'{villager_info['personality']}',
+                          inline=True)
+        message.add_field(name='Gender',
+                          value=f'{villager_info['gender']}',
+                          inline=True)
+        message.add_field(name='Sign',
+                          value=f'{villager_info['sign']}',
+                          inline=True)
+        message.add_field(name='Birthday',
+                          value=f'{villager_info['birthday_month'] + ' '
+                                   + villager_info['birthday_day']}',
+                          inline=True)
+        message.add_field(name='Catchphrase',
+                          value=f'{villager_info['phrase']}',
+                          inline=True)
     return message
 
 
@@ -45,7 +49,10 @@ class Villagers(commands.Cog):
     @commands.slash_command(name='villagerinfo', description='Get information about a villager by their name')
     async def villagerinfo(self, ctx: discord.ApplicationContext, villager: str):
         message = generate_villager_message(villager)
-        await ctx.respond(embed=message)
+        if isinstance(message, str):
+            await ctx.respond(message)
+        else:
+            await ctx.respond(embed=message)
 
     @commands.slash_command(name='residents', description='View all current island residents')
     async def residents(self, ctx: discord.ApplicationContext):
