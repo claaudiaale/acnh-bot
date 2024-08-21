@@ -5,8 +5,8 @@ import datetime
 import random
 from util.activities import (fetch_species, fetch_specimen, fetch_fossils, fetch_fossil_group, fetch_single_fossil,
                              fetch_item_info)
-from commands.user.profile import (add_to_inventory, has_tool, update_health, add_to_museum, get_user_profile,
-                                   update_bells, has_item, remove_from_inventory, update_profile, get_limit)
+from commands.user.util import (add_to_inventory, has_tool, update_health, add_to_museum, get_user_profile,
+                                update_bells, has_item, remove_from_inventory, update_profile, get_limit)
 
 
 def generate_random_specimen(species, no_swarm=False):

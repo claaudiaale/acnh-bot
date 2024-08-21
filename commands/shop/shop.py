@@ -3,8 +3,8 @@ from discord.ext import commands
 from util.tools import fetch_all_tools, fetch_tools
 from util.embed import embed_arrows, handle_user_selection
 from util.activities import fetch_item_info, fetch_clothing_info
-from commands.user.profile import (add_to_inventory, has_item, remove_from_inventory, update_bells, get_user_profile,
-                                   has_paintings)
+from commands.user.util import (add_to_inventory, has_item, remove_from_inventory, update_bells, get_user_profile,
+                                has_paintings)
 
 
 def sort_tools(tool):

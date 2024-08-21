@@ -2,8 +2,8 @@ import discord
 from discord.ext import commands
 import string
 import datetime
-from commands.user.profile import (generate_random_art, get_user_profile, add_to_inventory, update_bells,
-                                   update_purchased_art)
+from commands.user.util import (generate_random_art, get_user_profile, add_to_inventory, update_bells,
+                                update_purchased_art)
 from util.redd import fetch_one_art
 from util.embed import embed_arrows, handle_user_selection
 

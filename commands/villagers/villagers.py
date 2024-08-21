@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from views.database import db
 from util.villagers import get_villager_info, get_villager_name
 from util.embed import embed_arrows, handle_user_selection
-from commands.user.profile import get_user_profile, generate_random_villager
+from commands.user.util import get_user_profile, generate_random_villager
 
 load_dotenv()
 

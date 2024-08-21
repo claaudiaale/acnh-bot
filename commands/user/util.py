@@ -402,7 +402,7 @@ def update_purchased_art(user_id, artwork):
             return
 
 
-class Profile(commands.Cog):
+class Utility(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -474,6 +474,45 @@ class Profile(commands.Cog):
                                icon_url='https://dodo.ac/np/images/6/68/Tom_Nook_NH_Character_Icon.png')
             await ctx.respond(embed=message)
 
+    @commands.slash_command(name='help', description='Show all available commands to use')
+    async def help(self, ctx: discord.ApplicationContext,
+                   command: discord.Option(discord.SlashCommandOptionType.string,
+                                           'args', required=False, default=None)):
+        message = discord.Embed(color=0x9dffb0,
+                                title='Commands')
+        cog_commands = {}
+
+        for cog_name, cog in self.bot.cogs.items():
+            cog_commands[cog_name] = [cmd for cmd in cog.get_commands()]
+
+        if command:
+            command = command.lower().strip()
+            matched = []
+            for cog_name, slash_commands in cog_commands.items():
+                for cmd in slash_commands:
+                    if cmd.name.lower() == command:
+                        matched.extend([cmd.name, cmd.description])
+            if matched:
+                message_dict = message.to_dict()
+                description = f'`/{matched[0]}`\n{matched[1]}'
+                message_dict['description'] = description
+                message = discord.Embed.from_dict(message_dict)
+            else:
+                message.add_field(name='Oops!',
+                                  value='This command does not exist.')
+        elif not command:
+            for cog_name, slash_commands in cog_commands.items():
+                if cog_name != 'Help':
+                    cog_slash_commands = ' '.join([f'`/{cmd.name}`' for cmd in slash_commands])
+                    message.add_field(name=cog_name,
+                                      value=cog_slash_commands)
+            message.add_field(name='Details',
+                              value='Type `/help <command name>` for more details about a command.',
+                              inline=False)
+        message.set_author(name='Tom Nook',
+                           icon_url='https://dodo.ac/np/images/6/68/Tom_Nook_NH_Character_Icon.png')
+        await ctx.respond(embed=message)
+
 
 def setup(bot):
-    bot.add_cog(Profile(bot))
+    bot.add_cog(Utility(bot))

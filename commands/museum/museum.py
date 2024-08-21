@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from commands.user.profile import get_museum_info, has_paintings, add_to_museum, remove_from_inventory
+from commands.user.util import get_museum_info, has_paintings, add_to_museum, remove_from_inventory
 from util.activities import fetch_species, fetch_fossils
 from util.redd import fetch_one_art
 from util.embed import handle_user_selection
